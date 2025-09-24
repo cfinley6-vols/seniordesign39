@@ -5,7 +5,7 @@
 - Explain how it builds on the inspiration from Briform and expands into a more comprehensive tool.
 - Emphasize the need for better, more user-friendly online music education platforms.
 ### 2. Platform (Member 2)
-- Mention the planned tech stack (e.g., React or Vue for front end, Node.js/Python for backend, PostgreSQL for database).
+- Mention the planned tech stack (e.g. NextJS).
 - Touch on APIs for Spotify/YouTube integration.
 - Highlight the balance of usability and performance in the design.
 ### 3. Key Features (Member 3)
