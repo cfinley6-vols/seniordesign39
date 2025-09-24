@@ -1,6 +1,6 @@
 # Project Vision Presentation Bullet Points
 
-### 1. Premise of the Project (Connor)
+### 1. Premise of the Project (Davis)
 - Introduce the project: an interactive music education app for college-level music theory and ear training.
 - Explain how it builds on the inspiration from Briform and expands into a more comprehensive tool.
 - Emphasize the need for better, more user-friendly online music education platforms.
@@ -8,7 +8,7 @@
 - Mention the planned tech stack (e.g. NextJS).
 - Touch on APIs for Spotify/YouTube integration.
 - Highlight the balance of usability and performance in the design.
-### 3. Key Features (Member 3)
+### 3. Key Features (Connor)
 - Spotify track import with melody isolation.
 - Auto-generated scored notation.
 - Ear training feedback (immediate and accurate).
