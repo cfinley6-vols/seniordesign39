@@ -1,4 +1,4 @@
 # Important Links
-https://www.brianedwardjarvis.com/MusicTheoryWebApps/BriFormer/briformer.html
+BriFormer - https://www.brianedwardjarvis.com/MusicTheoryWebApps/BriFormer/briformer.html
 
-https://developer.spotify.com/documentation/web-api
+Spotify Web API - https://developer.spotify.com/documentation/web-api
