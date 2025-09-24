@@ -1,6 +1,6 @@
 # Project Vision Presentation Bullet Points
 
-### 1. Premise of the Project (Member 1)
+### 1. Premise of the Project (Connor)
 - Introduce the project: an interactive music education app for college-level music theory and ear training.
 - Explain how it builds on the inspiration from Briform and expands into a more comprehensive tool.
 - Emphasize the need for better, more user-friendly online music education platforms.
