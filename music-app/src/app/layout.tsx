@@ -53,6 +53,12 @@ export default function RootLayout({
               >
                 Briform
               </Link>
+			  <Link
+                href="/player"
+                className="text-gray-700 hover:text-indigo-600 transition"
+              >
+                Player
+              </Link>
             </div>
           </div>
         </nav>
