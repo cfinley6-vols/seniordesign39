@@ -34,7 +34,7 @@ export default function RootLayout({
 					<div className="max-w-7xl mx-auto px-2 py-4 flex items-center justify-between">
 						<Link
 							href="/"
-							className="text-xl font-bold text-indigo-600 hover:text-indigo-800 transition"
+							className="text-xl font-bold text-[#FF8200] hover:text-indigo-800 transition"
 						>
 							Music Education App
 						</Link>
