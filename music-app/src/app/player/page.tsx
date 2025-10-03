@@ -1,83 +1,71 @@
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 export default function PlayerPage() {
-  const { data: session, status } = useSession();
-  const [playlists, setPlaylists] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch user data from our /api/me route if logged in
   useEffect(() => {
-    if (!session) return;
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+      } catch (err) {
+        console.error("Error fetching Spotify user:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-    fetch("/api/spotify/playlists")
-      .then((res) => res.json())
-      .then((data) => setPlaylists(data.items || []));
-  }, [session]);
+    fetchUser();
+  }, []);
 
-  if (status === "loading") {
-    return <p className="text-white p-4">Loading...</p>;
-  }
+  const handleLogin = () => {
+    window.location.href = "/api/auth/login"; // kicks off Spotify login
+  };
 
-  if (!session) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-zinc-900 text-white">
-        <h1 className="text-3xl font-bold mb-6">Welcome to My Spotify Clone</h1>
-        <button
-          className="px-6 py-3 bg-green-500 rounded-full hover:bg-green-600 transition"
-          onClick={() => signIn("spotify")}
-        >
-          Sign in with Spotify
-        </button>
-      </div>
-    );
-  }
+  const handleLogout = () => {
+    window.location.href = "/api/auth/logout";
+  };
 
   return (
-    <div className="bg-zinc-900 min-h-screen text-white p-4">
-      <header className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">My Spotify Clone</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen gap-6">
+      <h1 className="text-3xl font-bold">Spotify Player</h1>
+
+      {loading && <p>Loading...</p>}
+
+      {!loading && !user && (
         <button
-          className="px-4 py-2 bg-red-500 rounded hover:bg-red-600"
-          onClick={() => signOut()}
+          onClick={handleLogin}
+          className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition"
         >
-          Sign Out
+          Login with Spotify
         </button>
-      </header>
+      )}
 
-      <section>
-        <h2 className="text-xl font-semibold mb-4">Your Playlists</h2>
-        {playlists.length === 0 ? (
-          <p>No playlists found.</p>
-        ) : (
-          <ul className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {playlists.map((p) => (
-              <li key={p.id} className="p-2 bg-zinc-800 rounded">
-                {p.images[0]?.url && (
-                  <img
-                    src={p.images[0].url}
-                    alt={p.name}
-                    className="w-full h-32 object-cover rounded mb-2"
-                  />
-                )}
-                <p className="font-semibold">{p.name}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {!loading && user && (
+        <div className="flex flex-col items-center gap-3">
+          <img
+            src={user.images?.[0]?.url || "/default-avatar.png"}
+            alt="Profile"
+            className="w-24 h-24 rounded-full"
+          />
+          <p className="text-xl">Hello, {user.display_name}</p>
+          <p className="text-gray-600">{user.email}</p>
 
-      {/* Placeholder Player Controls */}
-      <footer className="fixed bottom-0 left-0 w-full p-4 bg-zinc-900 border-t border-zinc-700 flex items-center justify-between">
-        <div>
-          <p>Now Playing: –</p>
+		  <button
+            onClick={handleLogout}
+            className="px-6 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition"
+          >
+			Logout
+		  </button>
         </div>
-        <div className="flex gap-4">
-          <button>Prev</button>
-          <button>Play/Pause</button>
-          <button>Next</button>
-        </div>
-      </footer>
+      )}
     </div>
   );
 }
