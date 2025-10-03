@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-// import AuthButton from "../components/AuthButton";
+import AuthButton from "@/app/components/AuthButton";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -38,15 +38,12 @@ export default function RootLayout({
 						>
 							Music Education App
 						</Link>
-						<div className="flex space-x-6">
+						<div className="flex items-center space-x-6">
 							<Link href="/" className="text-gray-700 hover:text-indigo-600 transition">
 								Home
 							</Link>
 							<Link href="/briform" className="text-gray-700 hover:text-indigo-600 transition">
 								Briform
-							</Link>
-							<Link href="/player" className="text-gray-700 hover:text-indigo-600 transition">
-								Player
 							</Link>
 							<AuthButton />
 						</div>

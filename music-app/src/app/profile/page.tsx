@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function PlayerPage() {
+export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +35,7 @@ export default function PlayerPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-6">
-      <h1 className="text-3xl font-bold">Spotify Player</h1>
+      <h1 className="text-3xl font-bold">Profile Page</h1>
 
       {loading && <p>Loading...</p>}
 

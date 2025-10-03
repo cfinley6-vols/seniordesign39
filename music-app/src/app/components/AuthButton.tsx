@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function AuthButton() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function fetchUser() {
@@ -23,6 +25,22 @@ export default function AuthButton() {
     fetchUser();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    // Use capture phase to catch clicks before React updates
+    document.addEventListener("click", handleClickOutside, true);
+
+    return () => {
+      document.removeEventListener("click", handleClickOutside, true);
+    };
+  }, []);
+
   const handleLogin = () => {
     window.location.href = "/api/auth/login";
   };
@@ -31,30 +49,51 @@ export default function AuthButton() {
     window.location.href = "/api/auth/logout";
   };
 
-  if (loading) {
-    return <span className="text-gray-500">...</span>;
-  }
+  if (loading) return <span className="text-gray-400">...</span>;
 
   if (!user) {
     return (
       <button
         onClick={handleLogin}
-        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition"
+        className="px-4 py-1 font-semibold text-white rounded-full bg-[#1DB954] hover:bg-[#1ed760] transition"
       >
-        Login
+        Login with Spotify
       </button>
     );
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="font-medium">{user.display_name}</span>
+    <div className="relative" ref={containerRef}>
       <button
-        onClick={handleLogout}
-        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+        onClick={() => setOpen(!open)}
+        className="flex items-center space-x-2 focus:outline-none"
       >
-        Logout
+        <img
+          src={user.images?.[0]?.url || "/default-avatar.png"}
+          alt="Avatar"
+          className="w-8 h-8 rounded-full object-cover"
+        />
+        <span className="hidden sm:inline text-gray-700 font-medium">
+          {user.display_name}
+        </span>
       </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md border border-gray-200 py-2 z-50">
+          <a
+            href="/profile"
+            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+          >
+            Profile
+          </a>
+          <button
+            onClick={handleLogout}
+            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 transition"
+          >
+            Logout
+          </button>
+        </div>
+      )}
     </div>
   );
 }
