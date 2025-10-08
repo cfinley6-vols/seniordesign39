@@ -81,10 +81,10 @@ export default function AuthButton() {
       {open && (
         <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-md border border-gray-200 py-2 z-50">
           <a
-            href="/profile"
+            href="/dashboard"
             className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
           >
-            Profile
+            Dashboard
           </a>
           <button
             onClick={handleLogout}

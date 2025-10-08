@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   }
 
   // Here you’d normally store tokens in a DB or cookies
-  const res = NextResponse.redirect("http://127.0.0.1:3000/profile");
+  const res = NextResponse.redirect("http://127.0.0.1:3000/dashboard");
   res.cookies.set("spotify_access_token", tokens.access_token, { httpOnly: true });
   res.cookies.set("spotify_refresh_token", tokens.refresh_token, { httpOnly: true });
 
