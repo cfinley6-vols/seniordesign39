@@ -13,39 +13,52 @@ export default function AccountDashboard() {
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [loadingUser, setLoadingUser] = useState(true);
 
-	// Key for localStorage
+	// localStorage key
 	const getProjectsKey = (userId: string) => `briformer_projects_${userId}`;
 
-	// Load projects from localStorage
 	const loadProjects = (userId: string) => {
 		const data = localStorage.getItem(getProjectsKey(userId));
 		return data ? JSON.parse(data) : [];
 	};
 
-	// Save projects to localStorage
 	const saveProjects = (userId: string, projects: Project[]) => {
 		localStorage.setItem(getProjectsKey(userId), JSON.stringify(projects));
 	};
 
-	useEffect(() => {
-		async function fetchUser() {
-			try {
-				const res = await fetch("/api/me");
-				if (res.ok) {
-					const data = await res.json();
-					setUser(data);
+	// Fetch /api/me with retry logic
+	const fetchUserData = async () => {
+		try {
+			let res = await fetch("/api/me");
 
-					// Load projects for this user
-					setProjects(loadProjects(data.id));
+			// If access token expired, try refreshing
+			if (res.status === 401) {
+				const refresh = await fetch("/api/auth/refresh");
+
+				if (refresh.ok) {
+					// retry /api/me once after successful refresh
+					res = await fetch("/api/me");
+				} else {
+					throw new Error("Refresh failed");
 				}
-			} catch (err) {
-				console.error("Error fetching user:", err);
-			} finally {
-				setLoadingUser(false);
 			}
-		}
 
-		fetchUser();
+			if (res.ok) {
+				const data = await res.json();
+				setUser(data);
+				setProjects(loadProjects(data.id));
+			} else {
+				setUser(null);
+			}
+		} catch (err) {
+			console.error("Error fetching user:", err);
+			setUser(null);
+		} finally {
+			setLoadingUser(false);
+		}
+	};
+
+	useEffect(() => {
+		fetchUserData();
 	}, []);
 
 	const handleLogin = () => {
@@ -56,7 +69,6 @@ export default function AccountDashboard() {
 		window.location.href = "/api/auth/logout";
 	};
 
-	// Create a new project
 	const createProject = () => {
 		if (!user) return;
 		const name = prompt("Enter project name") || "Untitled Project";
@@ -70,7 +82,6 @@ export default function AccountDashboard() {
 		saveProjects(user.id, updated);
 	};
 
-	// Rename a project
 	const renameProject = (id: string) => {
 		const project = projects.find((p) => p.id === id);
 		if (!project) return;
@@ -83,7 +94,6 @@ export default function AccountDashboard() {
 		saveProjects(user.id, updated);
 	};
 
-	// Delete a project
 	const deleteProject = (id: string) => {
 		if (!confirm("Are you sure you want to delete this project?")) return;
 		const updated = projects.filter((p) => p.id !== id);
@@ -91,6 +101,7 @@ export default function AccountDashboard() {
 		saveProjects(user.id, updated);
 	};
 
+	// UI states
 	if (loadingUser) {
 		return (
 			<div className="flex items-center justify-center min-h-screen bg-gray-900 text-gray-100">
