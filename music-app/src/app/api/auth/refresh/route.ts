@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-	const refreshToken = (await cookies()).get("spotify_refresh_token")?.value;
+	const cookieStore = cookies();
+	const refreshToken = (await cookieStore).get("spotify_refresh_token")?.value;
 
 	if (!refreshToken) {
 		return NextResponse.json({ error: "No refresh token" }, { status: 400 });
@@ -28,7 +29,15 @@ export async function GET() {
 	}
 
 	const res = NextResponse.json({ access_token: tokens.access_token });
-	res.cookies.set("spotify_access_token", tokens.access_token, { httpOnly: true });
+
+	// Update the access token cookie
+	res.cookies.set("spotify_access_token", tokens.access_token, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax",
+		path: "/",
+		maxAge: 3600, // 1 hour
+	});
 
 	return res;
 }

@@ -28,10 +28,25 @@ export async function GET(request: Request) {
 		return NextResponse.json(tokens, { status: 400 });
 	}
 
-	// Here you’d normally store tokens in a DB or cookies
+	// Redirect user to dashboard
 	const res = NextResponse.redirect("http://127.0.0.1:3000/dashboard");
-	res.cookies.set("spotify_access_token", tokens.access_token, { httpOnly: true });
-	res.cookies.set("spotify_refresh_token", tokens.refresh_token, { httpOnly: true });
+
+	const cookieOptions = {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax" as const,
+		path: "/",
+	};
+
+	// Store tokens in secure cookies
+	res.cookies.set("spotify_access_token", tokens.access_token, {
+		...cookieOptions,
+		maxAge: 3600, // 1 hour
+	});
+	res.cookies.set("spotify_refresh_token", tokens.refresh_token, {
+		...cookieOptions,
+		maxAge: 60 * 60 * 24 * 30, // 30 days
+	});
 
 	return res;
 }
