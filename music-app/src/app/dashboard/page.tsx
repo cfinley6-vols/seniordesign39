@@ -129,7 +129,7 @@ export default function AccountDashboard() {
 			{/* User Header */}
 			<div className="flex flex-col items-center mb-8">
 				<img
-					src={user.images?.[0]?.url || "/default-avatar.png"}
+					src={user.images?.[0]?.url || "/spotify_logo.png"}
 					alt="Profile"
 					className="w-24 h-24 rounded-full mb-3 border-2 border-gray-700"
 				/>

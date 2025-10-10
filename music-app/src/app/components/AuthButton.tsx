@@ -69,7 +69,7 @@ export default function AuthButton() {
 				className="flex items-center space-x-2 focus:outline-none"
 			>
 				<img
-					src={user.images?.[0]?.url || "/default-avatar.png"}
+					src={user.images?.[0]?.url || "/spotify_logo.png"}
 					alt="Avatar"
 					className="w-8 h-8 rounded-full object-cover"
 				/>
