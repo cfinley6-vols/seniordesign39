@@ -28,9 +28,7 @@ export async function GET(request: Request) {
 		return NextResponse.json(tokens, { status: 400 });
 	}
 
-	// Redirect user to dashboard
-	const res = NextResponse.redirect("http://127.0.0.1:3000/dashboard");
-
+	// Store tokens in secure cookies
 	const cookieOptions = {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
@@ -38,7 +36,8 @@ export async function GET(request: Request) {
 		path: "/",
 	};
 
-	// Store tokens in secure cookies
+	const res = NextResponse.redirect("http://127.0.0.1:3000/dashboard");
+
 	res.cookies.set("spotify_access_token", tokens.access_token, {
 		...cookieOptions,
 		maxAge: 3600, // 1 hour

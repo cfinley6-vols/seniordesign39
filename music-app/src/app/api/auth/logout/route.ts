@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 export async function GET() {
 	const res = NextResponse.redirect("http://127.0.0.1:3000/");
 
-	// Expire cookies
 	const cookieOptions = {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
