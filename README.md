@@ -5,6 +5,8 @@
 - Jason
 
 ### Briform
+- Davis
+- Jason
 
 ### Login / Account Information
 - Ryan
