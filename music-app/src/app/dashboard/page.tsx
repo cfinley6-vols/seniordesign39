@@ -173,7 +173,7 @@ export default function AccountDashboard() {
 						{projects.map((proj) => (
 							<li key={proj.id} className="flex justify-between items-center py-3">
 								<div>
-									{/* ✅ Updated link to go to /briform/[id] */}
+									{/* Updated link to go to /briform/[id] */}
 									<Link
 										href={`/briform/${proj.id}`}
 										className="font-medium text-white hover:underline"
