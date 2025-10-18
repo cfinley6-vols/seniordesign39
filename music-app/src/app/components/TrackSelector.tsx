@@ -47,7 +47,7 @@ export function TrackSelector({ accessToken, onSelectTrack }: TrackSelectorProps
 				/>
 				<button
 					onClick={searchTracks}
-					className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
+					className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 text-white"
 				>
 					Search
 				</button>

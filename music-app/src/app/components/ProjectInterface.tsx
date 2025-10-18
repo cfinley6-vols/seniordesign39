@@ -9,7 +9,6 @@ interface Project {
 	[key: string]: any;
 }
 
-
 interface ProjectInterfaceProps {
 	project: Project;
 	accessToken: string;
@@ -39,14 +38,16 @@ export function ProjectInterface({ project, accessToken }: ProjectInterfaceProps
 	};
 
 	return (
-		<div className="p-6 text-gray-300">
+		<div className="p-6 text-gray-700 dark:text-gray-300">
 			<h1 className="text-3xl font-bold mb-4">{project.name}</h1>
 			<p className="text-gray-400 mb-6">
 				Last updated {project.updated_at ? new Date(project.updated_at).toLocaleString() : "Unknown"}
 			</p>
 
 			{/* Track search & selection */}
-			<TrackSelector accessToken={accessToken} onSelectTrack={(track) => setSelectedTrack(track)} />
+			{!selectedTrack && (
+				<TrackSelector accessToken={accessToken} onSelectTrack={(track) => setSelectedTrack(track)} />
+			)}
 
 			{/* Timeline */}
 			{selectedTrack && (
