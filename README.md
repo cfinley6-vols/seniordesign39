@@ -11,3 +11,7 @@
 ### Login / Account Information
 - Ryan
 - Viktor
+
+
+# Required Dependencies
+npm install react-draggable react-resizable
