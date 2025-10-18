@@ -59,7 +59,12 @@ export default function AccountDashboard() {
 	// Create a new project
 	const createProject = async () => {
 		if (!user) return;
-		const name = prompt("Enter project name") || "Untitled Project";
+		
+		const input = prompt("Enter project name");
+		if (input === null) return; // user hit Cancel → do nothing
+
+		const name = input.trim() === "" ? "Untitled Project" : input;
+
 		try {
 			const res = await fetch("/api/projects", {
 				method: "POST",
@@ -159,7 +164,7 @@ export default function AccountDashboard() {
 			{/* Projects Section */}
 			<div className="w-full max-w-3xl bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-700">
 				<div className="flex justify-between items-center mb-4">
-					<h2 className="text-xl font-bold text-white">Your Briformer Projects</h2>
+					<h2 className="text-xl font-bold text-white">Your BriFormer Projects</h2>
 					<button
 						onClick={createProject}
 						className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
