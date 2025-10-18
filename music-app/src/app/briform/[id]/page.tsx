@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { getProjectById } from "@/app/lib/db";
+import { ProjectInterface } from "@/app/components/ProjectInterface";
 
 interface Props {
   params: { id: string };
@@ -19,7 +20,7 @@ export default async function BriformProjectPage({ params }: Props) {
       );
     }
 
-    // Fetch the Spotify user info
+    // Fetch Spotify user info (optional, in case you need userId)
     const res = await fetch("https://api.spotify.com/v1/me", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -33,9 +34,9 @@ export default async function BriformProjectPage({ params }: Props) {
     }
 
     const user = await res.json();
-    const userId = user.id; // This is the Spotify user ID
+    const userId = user.id;
 
-    // Fetch the project directly from SQLite
+    // Fetch the project from SQLite
     interface Project {
       id: string;
       name: string;
@@ -53,16 +54,8 @@ export default async function BriformProjectPage({ params }: Props) {
       );
     }
 
-    return (
-      <div className="p-6 text-gray-300">
-        <h1 className="text-3xl font-bold mb-2">{project.name}</h1>
-        <p className="text-gray-400">Last updated {project.updated_at ? new Date(project.updated_at).toLocaleString() : "Unknown"}</p>
-
-        <div className="mt-6">
-          <p>This is the project interface for {project.name}.</p>
-        </div>
-      </div>
-    );
+    // --- Render the client component ---
+    return <ProjectInterface project={project} accessToken={accessToken} />;
   } catch (err) {
     return (
       <div className="p-6 text-red-500">

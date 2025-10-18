@@ -3,10 +3,10 @@ import { useState } from "react"
 import { TrackSelector } from "./TrackSelector"
 
 interface Project {
-  id: string;
-  name: string;
-  updated_at?: string;
-  [key: string]: any;
+	id: string;
+	name: string;
+	updated_at?: string;
+	[key: string]: any;
 }
 
 
