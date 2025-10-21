@@ -2,72 +2,72 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+
+interface User {
+  id: string;
+  email: string;
+}
 
 export default function AuthButton() {
-	const [user, setUser] = useState<any>(null);
-	const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-	useEffect(() => {
-		async function fetchUser() {
-			try {
-				const res = await fetch("/api/me");
-				if (res.ok) {
-					const data = await res.json();
-					setUser(data);
-				}
-			} catch (err) {
-				console.error("Error fetching user:", err);
-			} finally {
-				setLoading(false);
-			}
-		}
-		fetchUser();
-	}, []);
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const res = await fetch("/api/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      } catch {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchUser();
+  }, []);
 
-	const handleLogin = () => {
-		window.location.href = "/api/auth/login";
-	};
+  const handleLogout = () => {
+    window.location.href = "/api/logout";
+  };
 
-	const handleLogout = () => {
-		window.location.href = "/api/auth/logout";
-	};
+  if (loading) return <span className="text-gray-400">...</span>;
 
-	if (loading) return <span className="text-gray-400">...</span>;
+  if (!user) {
+    return (
+      <div className="flex gap-2">
+        <Link
+          href="/login"
+          className="px-4 py-1 font-semibold text-white rounded-full bg-blue-600 hover:bg-blue-700 transition"
+        >
+          Login
+        </Link>
+        <Link
+          href="/register"
+          className="px-4 py-1 font-semibold text-white rounded-full bg-green-600 hover:bg-green-700 transition"
+        >
+          Register
+        </Link>
+      </div>
+    );
+  }
 
-	if (!user) {
-		return (
-			<button
-				onClick={handleLogin}
-				className="px-4 py-1 font-semibold text-white rounded-full bg-[#1DB954] hover:bg-[#1ed760] transition"
-			>
-				Login with Spotify
-			</button>
-		);
-	}
-
-	return (
-		<div className="flex items-center space-x-4">
-			{/* Profile Avatar and Name */}
-			<div className="flex items-center space-x-2">
-				<img
-					src={user.images?.[0]?.url || "/spotify_logo.png"}
-					alt="Avatar"
-					className="w-8 h-8 rounded-full object-cover"
-				/>
-				<a href="/dashboard">
-					<span className="hidden sm:inline text-gray-700 font-medium">
-						{user.display_name}
-					</span>
-				</a>
-			</div>
-
-			{/* Logout Button */}
-			<button
-				onClick={handleLogout}
-				className="px-3 py-1 text-sm text-red-600 bg-gray-200 rounded-md hover:bg-gray-300 transition"
-			>
-				Logout
-			</button>
-		</div>
-	);
+  return (
+    <div className="flex items-center gap-3">
+      <Link href="/dashboard" className="text-gray-700 font-medium">
+        {user.email}
+      </Link>
+      <button
+        onClick={handleLogout}
+        className="px-3 py-1 text-sm text-red-600 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+      >
+        Logout
+      </button>
+    </div>
+  );
 }

@@ -1,34 +1,29 @@
 // music-app/src/app/api/auth/login/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getUserByEmail } from "@/app/lib/db";
+import bcrypt from "bcryptjs";
 
-export async function GET() {
-	// Build Spotify login URL
-	const scope = [
-		"streaming",
-		"user-read-email",
-		"user-read-private",
-		"user-modify-playback-state",
-		"user-read-playback-state",
-		"user-read-currently-playing",
-		"playlist-read-private"
-	].join(" ");
+export async function POST(req: NextRequest) {
+	const { email, password } = await req.json();
 
-	const params = new URLSearchParams({
-		response_type: "code",
-		client_id: process.env.SPOTIFY_CLIENT_ID!,
-		scope,
-		redirect_uri: process.env.SPOTIFY_REDIRECT_URI!,
-		show_dialog: "true", // force account chooser
+	if (!email || !password) {
+		return NextResponse.json({ error: "Email and password required" }, { status: 400 });
+	}
+
+	const user = await getUserByEmail(email) as { id: string; email: string; password_hash: string } | null;
+	if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+		return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+	}
+
+	const res = NextResponse.json({ message: "Login successful", user: { id: user.id, email: user.email } });
+
+	res.cookies.set("session_user", user.id, {
+		httpOnly: true,
+		sameSite: "lax",
+		secure: process.env.NODE_ENV === "production",
+		path: "/",
+		maxAge: 60 * 60 * 24 * 7, // 7 days
 	});
-
-	const redirectUrl = "https://accounts.spotify.com/authorize?" + params.toString();
-
-	// Create a redirect response (NextResponse.redirect sets Location and status)
-	const res = NextResponse.redirect(redirectUrl);
-
-	// Clear old tokens first to allow a new login
-	res.cookies.set("spotify_access_token", "", { httpOnly: true, path: "/", expires: new Date(0) });
-	res.cookies.set("spotify_refresh_token", "", { httpOnly: true, path: "/", expires: new Date(0) });
 
 	return res;
 }

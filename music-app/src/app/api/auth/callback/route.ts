@@ -1,5 +1,6 @@
 // music-app/src/app/api/auth/callback/route.ts
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
@@ -24,28 +25,44 @@ export async function GET(request: Request) {
 	});
 
 	const tokens = await response.json();
-
 	if (tokens.error) {
 		return NextResponse.json(tokens, { status: 400 });
 	}
 
-	// Store tokens in secure cookies
-	const cookieOptions = {
-		httpOnly: true,
-		secure: process.env.NODE_ENV === "production",
-		sameSite: "lax" as const,
-		path: "/",
-	};
+	const cookieStore = cookies();
+	const sessionUser = (await cookieStore).get("session_user")?.value;
+
+	if (sessionUser) {
+		// Get Spotify profile
+		const profileRes = await fetch("https://api.spotify.com/v1/me", {
+			headers: { Authorization: `Bearer ${tokens.access_token}` },
+		});
+		const spotifyProfile = await profileRes.json();
+
+		linkSpotifyToUser(
+			sessionUser,
+			spotifyProfile.id,
+			tokens.access_token,
+			tokens.refresh_token
+		);
+	}
 
 	const res = NextResponse.redirect("http://127.0.0.1:3000/dashboard");
 
+	// Optional: keep access token for quick testing
 	res.cookies.set("spotify_access_token", tokens.access_token, {
-		...cookieOptions,
-		maxAge: 3600, // 1 hour
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax",
+		path: "/",
+		maxAge: 3600,
 	});
 	res.cookies.set("spotify_refresh_token", tokens.refresh_token, {
-		...cookieOptions,
-		maxAge: 60 * 60 * 24 * 30, // 30 days
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax",
+		path: "/",
+		maxAge: 60 * 60 * 24 * 30,
 	});
 
 	return res;
