@@ -12,9 +12,9 @@
 - Ryan
 - Viktor
 
-
 # Required Dependencies
-npm install react-draggable react-resizable
+npm install bcrypt
+npm install --save-dev @types/bcryptjs
 
 # NetIDs
 - Connor Finley (cfinley6)
