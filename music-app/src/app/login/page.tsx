@@ -20,7 +20,7 @@ export default function LoginPage() {
 			body: JSON.stringify({ email, password }),
 		});
 
-		if (res.ok) router.push("/dashboard");
+		if (res.ok) window.location.href = "/dashboard";
 		else setError((await res.json()).error || "Login failed");
 	};
 
