@@ -1,3 +1,4 @@
+// music-app/src/app/components/PlaybackTimeline.tsx
 "use client";
 import { useEffect, useRef, useState } from "react";
 

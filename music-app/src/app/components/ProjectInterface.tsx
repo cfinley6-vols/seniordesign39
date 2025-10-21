@@ -1,3 +1,4 @@
+// music-app/src/app/components/ProjectInterface.tsx
 "use client";
 import { useState, useRef } from "react";
 import { TrackSelector } from "./TrackSelector";

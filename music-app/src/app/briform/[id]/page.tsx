@@ -1,3 +1,4 @@
+// music-app/src/app/briform/[id]/page.tsx
 import { cookies } from "next/headers";
 import { getProjectById } from "@/app/lib/db";
 import { ProjectInterface } from "@/app/components/ProjectInterface";

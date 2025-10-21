@@ -1,4 +1,4 @@
-// src/app/lib/db.ts
+// music-app/src/app/lib/db.ts
 import Database from "better-sqlite3";
 import path from "path";
 
