@@ -14,6 +14,7 @@
 
 # Required Dependencies
 npm install bcrypt
+
 npm install --save-dev @types/bcryptjs
 
 # NetIDs
