@@ -16,7 +16,7 @@ export default function AuthButton() {
 	useEffect(() => {
 		async function fetchUser() {
 			try {
-				const res = await fetch("/api/me", { credentials: "include" }); // ✅ important
+				const res = await fetch("/api/me", { credentials: "include" });
 				if (res.ok) {
 					const data = await res.json();
 					setUser(data);

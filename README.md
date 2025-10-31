@@ -12,10 +12,8 @@
 - Ryan
 - Viktor
 
-# Required Dependencies
-npm install bcrypt
-
-npm install --save-dev @types/bcryptjs
+# Requirements
+npm install @supabase/supabase-js @supabase/ssr zod
 
 # NetIDs
 - Connor Finley (cfinley6)
