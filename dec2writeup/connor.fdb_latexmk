@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1764089216.67179 "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/connor.tex" "connor.pdf" "connor" 1764089216.9098 0
-  "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/connor.tex" 1764089216.48969 2973 d9e3d28734ed0c316791625fc6b009c9 ""
+["pdflatex"] 1764090417.35509 "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/connor.tex" "connor.pdf" "connor" 1764090417.59687 0
+  "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/connor.tex" 1764090417.17262 3722 715df7e097b32bb77300c1e018ab357b ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/map/fontname/texfonts.map" 1741388039 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/map/pdftex/updmap/pdftex.map" 1741388039 5466553 2748998d7db8078826afa1f272036265 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1741388039 1324 c910af8c371558dc20f2d7822f66fe64 ""
@@ -21,10 +21,12 @@
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/base/article.cls" 1741388039 20144 63d8bacaf52e5abf4db3bc322373e1d4 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/base/size12.clo" 1741388039 8449 ffe4ba2166a344827c3a832d1d5e0a91 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def" 1741388039 29785 9f93ab201fe5dd053afcc6c1bcf7d266 ""
+  "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/makecell/makecell.sty" 1741388039 15773 2dd7dde1ec1c2a3d0c85bc3b273e04d8 ""
+  "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/tools/array.sty" 1741388039 14552 27664839421e418b87f56fa4c6f66b1a ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/web2c/texmf.cnf" 1741388039 42151 79f67285bdd95beca4d137b380b4b9e5 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-var/web2c/pdftex/pdflatex.fmt" 1741388039 3346141 1288109d02d1c772df65535881471649 ""
-  "connor.aux" 1764089216.89509 332 6bc1d23197e44396c49de31158332e23 "pdflatex"
-  "connor.tex" 1764089216.48969 2973 d9e3d28734ed0c316791625fc6b009c9 ""
+  "connor.aux" 1764090417.58069 332 623ab337532c70e8302fa847bf7439f8 "pdflatex"
+  "connor.tex" 1764090417.17262 3722 715df7e097b32bb77300c1e018ab357b ""
   (generated)
   "connor.aux"
   "connor.log"
