@@ -39,6 +39,10 @@ INPUT ./writeup.lot
 INPUT ./writeup.lot
 INPUT writeup.lot
 OUTPUT writeup.lot
+INPUT ./writeup.lof
+INPUT ./writeup.lof
+INPUT writeup.lof
+OUTPUT writeup.lof
 OUTPUT writeup.pdf
 INPUT /opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/map/pdftex/updmap/pdftex.map
 INPUT /opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmr12.tfm

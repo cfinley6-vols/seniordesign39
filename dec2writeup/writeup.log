@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025/Homebrew) (preloaded format=pdflatex 2025.3.15)  25 NOV 2025 12:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025/Homebrew) (preloaded format=pdflatex 2025.3.15)  25 NOV 2025 18:56
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -74,6 +74,10 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 \tf@lot=\write4
 \openout4 = `writeup.lot'.
 
+ (./writeup.lof)
+\tf@lof=\write5
+\openout5 = `writeup.lof'.
+
 
 
 [1
@@ -91,15 +95,15 @@ L3 programming layer <2025-01-18>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 715 strings out of 473190
- 12432 string characters out of 5704335
+ 722 strings out of 473190
+ 12524 string characters out of 5704335
  407132 words of memory out of 5000000
- 24024 multiletter control sequences out of 15000+600000
+ 24028 multiletter control sequences out of 15000+600000
  563438 words of font info for 51 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  42i,11n,51p,498b,259s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on writeup.pdf (4 pages, 54106 bytes).
+Output written on writeup.pdf (4 pages, 54112 bytes).
 PDF statistics:
  32 PDF objects out of 1000 (max. 8388607)
  19 compressed objects within 1 object stream
