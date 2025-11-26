@@ -14,3 +14,12 @@
 
 ### Extension
 - LaTeX Workshop by James U
+
+# 11/25 Meeting
+### Design Concepts, Evaluation & Selection
+- Connor: Spotify vs. YouTube integration and how we can use both
+- Ryan: Exclusively offsite login vs. Supabase
+- Davis: NextJS / Web app vs. Python-based / Downloadable app
+	- We chose the web app route because our main goal is improving usability, and the web app is more usable and accessible
+- Viktor: Auto-grading & manual grading vs. strictly manual grading
+- Jason: Briform-inspired design vs. design-from-scratch
