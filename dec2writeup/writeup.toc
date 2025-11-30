@@ -1,9 +1,12 @@
-\contentsline {section}{Design Concepts, Evaluation, and Selection}{1}{}%
-\contentsline {section}{Deliverables}{1}{}%
-\contentsline {subsection}{Development}{1}{}%
-\contentsline {subsection}{Testing/Feedback}{1}{}%
-\contentsline {subsection}{Deployment}{1}{}%
-\contentsline {section}{Project Management}{2}{}%
-\contentsline {subsection}{Proposed Project Timeline}{2}{}%
-\contentsline {section}{Budget}{3}{}%
-\contentsline {subsection}{Estimated Budget}{3}{}%
+\contentsline {section}{Technical Approach}{1}{}%
+\contentsline {subsection}{Functional Decomposition}{1}{}%
+\contentsline {section}{Design Concepts, Evaluation, and Selection}{3}{}%
+\contentsline {subsection}{Viktor Potter}{3}{}%
+\contentsline {section}{Deliverables}{3}{}%
+\contentsline {subsection}{Development}{3}{}%
+\contentsline {subsection}{Testing/Feedback}{4}{}%
+\contentsline {subsection}{Deployment}{4}{}%
+\contentsline {section}{Project Management}{4}{}%
+\contentsline {subsection}{Proposed Project Timeline}{5}{}%
+\contentsline {section}{Budget}{5}{}%
+\contentsline {subsection}{Estimated Budget}{5}{}%
