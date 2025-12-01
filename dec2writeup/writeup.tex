@@ -15,6 +15,23 @@
 % Begin page numbering here
 \pagenumbering{arabic}
 \pagestyle{plain}
+
+\section*{The Requirement Specification}
+\addcontentsline{toc}{section}{The Requirement Specification}
+Our requirements, in order of priority, are: developing a fully functional web application, connecting a media platform to enable song manipulation, designing a BriForm-like page for music education, managing user login credentials, and grading music assignments. We decided on these requirements by listening to feedback from professors and music theory students on their experiences with BriForm.
+
+\textbf{Application.} Having a working application, a way for users to interact with our product, is our number one priority. We plan to deliver a fully functional web application that users can access from anywhere. Our web app will host our BriForm-like tool, allowing teachers and students to complete assignments and study music.
+
+\textbf{Media.} Our project is a music education tool. Thus, our users need a way to import songs so that they can study music and learn from it. We are choosing to use YouTube's API, which allows users to select a video on YouTube and then analyze it, dissect it, and overall hone their skills.
+
+\textbf{Design.} The number one complaint that BriForm users possess is how clunky and unusable the design feels. We plan to keep the functionality of BriForm while updating the UI to be intuitive for users. We want people to enjoy using our tool, rather than it being a chore. Alongside a better UI, we plan to add some more functionality to our tool so that users can take their music education to the next level.
+
+\textbf{Login.} Users will need a way to log in to our web application to save their projects and access them from any device. We are still figuring out the best way to store user credentials; however, we plan to create a login page so that users can securely store their projects.
+
+\textbf{Grading.} Allowing teachers to set assignments and grade through our platform would make teachers' lives easier. It would provide a strong incentive to use our tool over an alternative such as BriForm. By allowing teachers to set up automatic grading for assignments it will give students faster feedback on their progress and take a load off teachers’ shoulders.
+
+Overall, our requirements give us a clear focus when creating our music education tool. Our requirements are carefully chosen by feedback from teachers and students, and give us a path towards designing a music education tool that people will enjoy using.
+
 \section*{Technical Approach}
 \addcontentsline{toc}{section}{Technical Approach}
 \subsection*{Functional Decomposition}
@@ -25,28 +42,32 @@
     \caption{Technical Diagram}
     \label{fig:tech401}
 \end{figure}
-\hspace*{2em}The first functional unit of the website is the register and login page. On this page, the user will be prompted to either log in to an existing account or to create a new account. If a user needs to create an account, they will be directed to do so while selecting whether they are a teacher or a student, and then will be redirected to the appropriate landing page. If a user already has an account and logs in, they will also be redirected to the appropriate landing page.
-\\
-\hspace*{2em}The student hub of our site is going to be where students end up after they log in. This will contain all of their classes as well as any assignments that are soon due. It will also have a redirect to the briform style page in case they want to make something independent from their classes. They will be able to view any saved projects they have completed, as well as be able to manage them.
-\\
-\hspace*{2em}From the student hub, students will be able to access their individual classes through the classes page. This will allow them to go into their classes and see anything that has been posted by the instructor, as well as any lessons they need to complete.
-\\
-\hspace*{2em}Via the classes page, students will be able to move to an assignment page in order to be able to see all assignments for that class, as well as their due dates and any grades if the assignments have been graded.
-\\
-\hspace*{2em}When it comes to teachers, after logging in, they will be sent to the teacher hub. In this hub, they will be able to view all classes they are currently running, as well as being able to make new classes. They can also directly access the briform style page from here as well if they want to use the tool and create new projects, as well as save them. Teachers will also be able to access the sections page from the teacher hub.
-\\
-\hspace*{2em}The sections page is a per-class page that lets the teacher manage that class. From here, they can post announcements or other class-related posts. They will also be able to create sections that, when the students are on the classes page, they will be able to view the sections the teachers create. In these sections teacher can post material for students to learn from. The last thing the teacher can do on the sections page is to post and grade assignments for the students.
-\\
-\hspace*{2em}In the assignment creation page, the teacher will be able to make new assignments for their students to work on. These can be simple assignments, such as record and submit something, or more involved assignments where they have to use the Briform style tool to make and submit a project. When using the assignment creation page, the teacher can also set up how the assignment is going to be graded. They can decide whether the assignment will be graded automatically or if it will be manually graded by them after the students submit.
-\\
-\hspace*{2em}	Finally, we have a Briform-style page that takes inspiration from the site Briformer. In this page, students and teachers will be able to make new projects in which they use a music audio file or a video to score the music and practice things like ear theory. They will also have the choice to save the project they finished, and if they want to continue a project, they can upload an existing saved project to resume where they left off.
-\\
+The first functional unit of the website is the register and login page. On this page, the user will be prompted to either log in to an existing account or to create a new account. If a user needs to create an account, they will be directed to do so while selecting whether they are a teacher or a student, and then will be redirected to the appropriate landing page. If a user already has an account and logs in, they will also be redirected to the appropriate landing page.
+
+The student hub of our site is going to be where students end up after they log in. This will contain all of their classes as well as any assignments that are soon due. It will also have a redirect to the briform style page in case they want to make something independent from their classes. They will be able to view any saved projects they have completed, as well as be able to manage them.
+
+From the student hub, students will be able to access their individual classes through the classes page. This will allow them to go into their classes and see anything that has been posted by the instructor, as well as any lessons they need to complete.
+
+Via the classes page, students will be able to move to an assignment page in order to be able to see all assignments for that class, as well as their due dates and any grades if the assignments have been graded.
+
+When it comes to teachers, after logging in, they will be sent to the teacher hub. In this hub, they will be able to view all classes they are currently running, as well as being able to make new classes. They can also directly access the briform style page from here as well if they want to use the tool and create new projects, as well as save them. Teachers will also be able to access the sections page from the teacher hub.
+
+The sections page is a per-class page that lets the teacher manage that class. From here, they can post announcements or other class-related posts. They will also be able to create sections that, when the students are on the classes page, they will be able to view the sections the teachers create. In these sections teacher can post material for students to learn from. The last thing the teacher can do on the sections page is to post and grade assignments for the students.
+
+In the assignment creation page, the teacher will be able to make new assignments for their students to work on. These can be simple assignments, such as record and submit something, or more involved assignments where they have to use the Briform style tool to make and submit a project. When using the assignment creation page, the teacher can also set up how the assignment is going to be graded. They can decide whether the assignment will be graded automatically or if it will be manually graded by them after the students submit.
+
+Finally, we have a Briform-style page that takes inspiration from the site Briformer. In this page, students and teachers will be able to make new projects in which they use a music audio file or a video to score the music and practice things like ear theory. They will also have the choice to save the project they finished, and if they want to continue a project, they can upload an existing saved project to resume where they left off.
+
 \section*{Design Concepts, Evaluation, and Selection}
 \addcontentsline{toc}{section}{Design Concepts, Evaluation, and Selection}
-\subsection*{Viktor Potter}
-\addcontentsline{toc}{subsection}{Viktor Potter}
-\hspace*{2em}One of the major design decisions for our product was whether assignments could be marked as autograded or manually graded by teachers, or if we would require teachers to grade their assignments with no option for autograding. For the choice of making teachers grade themselves with no option for autograding, it will be as simple as providing the teacher a box where they put the total possible score when creating an assignment, and then having them go back once a student submits an assignment to put in a grade themselves. When it comes to having an autograde system, we would have to make our own model for how assignments should be graded, as well as implement a way for teachers to adjust the autograding system. When it comes to these two alternatives for grading, the best decision for what we are making would be to only have manual grading enabled. As the time for our project is limited and along with all of the other functions that need to be built for the website, the time it would take to set up a proper autograding system would be too high compared to its overall importance to the project. The autograding feature may also be something that could cause teachers' headaches if we do not implement it properly, or if there are bugs within the autograding system that we fail to find. The time that would be spent making this feature would be utilized much better for optimizing the main components of the site and enhancing the user experience through a well-polished site instead of an autograding system.
-\\
+\subsection*{Web Application vs. Downloadable Application - Davis Akard}
+\addcontentsline{toc}{subsection}{Web Application vs. Downloadable Application - Davis Akard}
+When we first began crafting our design for a music education tool, we deliberated between two ways to bring it to users. We could either design a web application that users could connect to through a browser or make an executable that users would download and launch. Both ideas had their pros and cons; however, we ultimately decided on designing a web application. We went this route for multiple reasons, but the biggest reason was usability. One of our main focuses is usability, and a web application is much more usable than a downloaded application. Web browsers give users access to our tool by simply clicking on a link, whereas a downloaded application is harder to distribute, requires downloading, and is overall clunkier to use. We also decided on a web browser because it was a format that we were more comfortable with designing, implementing, and coding. HTML, CSS, and JavaScript are all relatively basic programming languages and something that we are either comfortable with or will become comfortable with quickly. Designing a downloadable application is something we are unfamiliar with, and designing one would take a lot more effort than a web application.
+
+\subsection*{Auto-Grading \& Manual Grading vs. Strictly Manual Grading - Viktor Potter}
+\addcontentsline{toc}{subsection}{Auto-Grading \& Manual Grading vs. Strictly Manual Grading - Viktor Potter}
+One of the major design decisions for our product was whether assignments could be marked as autograded or manually graded by teachers, or if we would require teachers to grade their assignments with no option for autograding. For the choice of making teachers grade themselves with no option for autograding, it will be as simple as providing the teacher a box where they put the total possible score when creating an assignment, and then having them go back once a student submits an assignment to put in a grade themselves. When it comes to having an autograde system, we would have to make our own model for how assignments should be graded, as well as implement a way for teachers to adjust the autograding system. When it comes to these two alternatives for grading, the best decision for what we are making would be to only have manual grading enabled. As the time for our project is limited and along with all of the other functions that need to be built for the website, the time it would take to set up a proper autograding system would be too high compared to its overall importance to the project. The autograding feature may also be something that could cause teachers' headaches if we do not implement it properly, or if there are bugs within the autograding system that we fail to find. The time that would be spent making this feature would be utilized much better for optimizing the main components of the site and enhancing the user experience through a well-polished site instead of an autograding system.
+
 \section*{Deliverables}
 \addcontentsline{toc}{section}{Deliverables}
 Our project deliverables can be divided into three main phases: Development, Testing/Feedback, and Deployment.  The specific deliverables for each category are outlined below:
