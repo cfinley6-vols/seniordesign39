@@ -1,10 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.30)  30 NOV 2025 22:11
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.12.1)  1 DEC 2025 08:31
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**c:/Users/Owner/Documents/GitHub/seniordesign39/dec2writeup/writeup.tex
-(c:/Users/Owner/Documents/GitHub/seniordesign39/dec2writeup/writeup.tex
+**c:/Users/rthwe/Documents/SeniorDesign/seniordesign39/dec2writeup/writeup.tex
+(c:/Users/rthwe/Documents/SeniorDesign/seniordesign39/dec2writeup/writeup.tex
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-11-14>
 (c:/texlive/2025/texmf-dist/tex/latex/base/article.cls
@@ -122,38 +122,31 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 
  [1
 
-{c:/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<images/401Technical.drawio.png, id=8, 412.54124pt x 553.06625pt>
+{c:/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [1]
+<images/401Technical.drawio.png, id=11, 412.54124pt x 553.06625pt>
 File: images/401Technical.drawio.png Graphic file (type png)
 <use images/401Technical.drawio.png>
-Package pdftex.def Info: images/401Technical.drawio.png  used on input line 41.
+Package pdftex.def Info: images/401Technical.drawio.png  used on input line 49.
 (pdftex.def)             Requested size: 195.0pt x 261.42645pt.
- [1] [2 <./images/401Technical.drawio.png>] [3] [4] [5]
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-[6] [7] (./writeup.aux)
+ [2] [3 <./images/401Technical.drawio.png>] [4] [5] [6] [7] [8] [9] (./writeup.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-11-14>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 1640 strings out of 469475
- 25697 string characters out of 5469239
- 442733 words of memory out of 5000000
- 30312 multiletter control sequences out of 15000+600000
+ 1640 strings out of 467538
+ 25715 string characters out of 5423725
+ 441733 words of memory out of 5000000
+ 30560 multiletter control sequences out of 15000+600000
  632322 words of font info for 55 fonts, out of 8000000 for 9000
- 36 hyphenation exceptions out of 8191
- 57i,11n,65p,1616b,269s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 1141 hyphenation exceptions out of 8191
+ 57i,11n,65p,1622b,269s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on writeup.pdf (8 pages, 84248 bytes).
+Output written on writeup.pdf (10 pages, 89566 bytes).
 PDF statistics:
- 49 PDF objects out of 1000 (max. 8388607)
- 30 compressed objects within 1 object stream
+ 55 PDF objects out of 1000 (max. 8388607)
+ 34 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  6 words of extra memory for PDF output out of 10000 (max. 10000000)
 
