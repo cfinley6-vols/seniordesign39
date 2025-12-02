@@ -2,8 +2,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
-import AuthButton from "@/app/components/AuthButton";
+import Navbar from "@/app/components/Navbar";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -31,19 +30,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
 				{/* Navbar */}
-				<nav className="bg-white shadow-md">
-					<div className="max-w-7xl mx-auto px-2 py-4 flex items-center justify-between">
-						<Link
-							href="/"
-							className="text-xl font-bold text-[#FF8200] hover:text-orange-800 transition"
-						>
-							Music Education App
-						</Link>
-						<div className="flex items-center space-x-6">
-						<AuthButton />
-						</div>
-					</div>
-				</nav>
+				<Navbar />
 
 				{/* Page Content */}
 				<main>
