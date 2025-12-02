@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1764704430.55163 "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" "writeup.pdf" "writeup" 1764704430.86295 0
-  "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" 1764704430.04844 31540 d024436affa8e665b0815540c9bbbf20 ""
+["pdflatex"] 1764704534.85627 "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" "writeup.pdf" "writeup" 1764704535.19988 0
+  "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" 1764704534.63515 31520 811ea0bbfe013cdec6ef409acabfef94 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/map/fontname/texfonts.map" 1741388039 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/map/pdftex/updmap/pdftex.map" 1741388039 5466553 2748998d7db8078826afa1f272036265 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1741388039 1324 c910af8c371558dc20f2d7822f66fe64 ""
@@ -39,11 +39,11 @@
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/web2c/texmf.cnf" 1741388039 42151 79f67285bdd95beca4d137b380b4b9e5 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-var/web2c/pdftex/pdflatex.fmt" 1741388039 3346141 1288109d02d1c772df65535881471649 ""
   "images/401Technical.drawio.png" 1764117539.17098 48327 96ba3c963c5553243c986ac255f25115 ""
-  "writeup.aux" 1764704430.84024 2971 351c22be3c0a0ee02b7c707b5758336c "pdflatex"
-  "writeup.lof" 1764704430.84103 79 207bbbf269946a08e04cb6bd9b097e5f "pdflatex"
-  "writeup.lot" 1764704430.84101 165 becabdc467bb38a9258120834214b1e2 "pdflatex"
-  "writeup.tex" 1764704430.04844 31540 d024436affa8e665b0815540c9bbbf20 ""
-  "writeup.toc" 1764704430.84098 1323 7b56f25c274feda74cc98a8d0bf5dbf3 "pdflatex"
+  "writeup.aux" 1764704535.17419 2971 351c22be3c0a0ee02b7c707b5758336c "pdflatex"
+  "writeup.lof" 1764704535.17483 79 207bbbf269946a08e04cb6bd9b097e5f "pdflatex"
+  "writeup.lot" 1764704535.1748 165 becabdc467bb38a9258120834214b1e2 "pdflatex"
+  "writeup.tex" 1764704534.63515 31520 811ea0bbfe013cdec6ef409acabfef94 ""
+  "writeup.toc" 1764704535.17476 1323 7b56f25c274feda74cc98a8d0bf5dbf3 "pdflatex"
   (generated)
   "writeup.aux"
   "writeup.lof"
