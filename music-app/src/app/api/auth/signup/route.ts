@@ -1,42 +1,76 @@
 // music-app/src/app/api/auth/signup/route.ts
-import { NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { z } from 'zod'
-import { createAdminSupabase } from '@/app/lib/supabase/admin'
+import { type NextRequest, NextResponse } from "next/server";
+import { supabase } from "@/app/lib/supabase/client";
+import bcrypt from "bcryptjs";
 
-const Body = z.object({
-	email: z.string().email(),
-	password: z.string().min(6),
-	full_name: z.string().optional()
-})
+export async function POST(request: NextRequest) {
+	try {
+		const body = await request.json();
+		const { name, email, password, role = "user", metadata = {} } = body;
 
-export async function POST(req: Request) {
-	const json = await req.json()
-	const body = Body.parse(json)
+		// Basic field validation
+		if (!name || !email || !password) {
+			return NextResponse.json(
+				{ message: "Missing required fields" },
+				{ status: 400 }
+			);
+		}
 
-	// If you want a normal signup that returns a session cookie for the client, use createServerClient
-	const supabase = createServerClient(
-		process.env.NEXT_PUBLIC_SUPABASE_URL!,
-		process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-		{ cookies: await cookies() } // inline here — correct typing
-	)
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			return NextResponse.json({ message: "Invalid email format" }, { status: 400 });
+		}
 
-	const { data, error } = await supabase.auth.signUp({
-		email: body.email,
-		password: body.password
-	})
-	if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+		if (password.length < 6) {
+			return NextResponse.json(
+				{ message: "Password must be at least 6 characters" },
+				{ status: 400 }
+			);
+		}
 
-	// optionally create profile using admin client (service role) to bypass RLS
-	if (body.full_name && data.user?.id) {
-		const admin = createAdminSupabase()
-		await admin.from('profiles').insert({
-			id: data.user.id,
-			email: body.email,
-			full_name: body.full_name
-		})
+		// Check if user already exists
+		const { data: existingUser, error: checkError } = await supabase
+			.from("users")
+			.select("email")
+			.eq("email", email)
+			.maybeSingle();
+
+		if (checkError) {
+			return NextResponse.json({ message: "Error checking user" }, { status: 500 });
+		}
+
+		if (existingUser) {
+			return NextResponse.json({ message: "User already exists" }, { status: 409 });
+		}
+
+		// Hash password
+		const hashedPassword = await bcrypt.hash(password, 10);
+
+		// Insert new user
+		const { data: newUser, error: insertError } = await supabase
+			.from("users")
+			.insert([
+				{
+					name,
+					email,
+					password: hashedPassword,
+					role,
+					...metadata, // Spread optional metadata (like phone, address, etc.)
+				},
+			])
+			.select("id, name, email, role, created_at")
+			.single();
+
+		if (insertError) {
+			return NextResponse.json({ message: "Failed to create user" }, { status: 500 });
+		}
+
+		return NextResponse.json(
+			{ message: "User created successfully", user: newUser },
+			{ status: 201 }
+		);
+	} catch (error) {
+		console.error("Signup error:", error);
+		return NextResponse.json({ message: "Internal server error" }, { status: 500 });
 	}
-
-	return NextResponse.json({ user: data.user, session: data.session })
 }

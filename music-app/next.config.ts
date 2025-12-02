@@ -1,7 +1,11 @@
-import type { NextConfig } from "next";
+import { NextConfig } from 'next'
 
 const nextConfig = {
-	// Nextconfig settings here
-};
+  	reactStrictMode: true,
+	allowedDevOrigins: [
+	  '127.0.0.1',  // Add your local development origins
+	  'localhost'   // Typically used alongside 127.0.0.1
+	]
+}
 
-export default nextConfig;
+module.exports = nextConfig
