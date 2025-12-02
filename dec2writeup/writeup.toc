@@ -16,6 +16,6 @@
 \contentsline {subsection}{Deployment}{11}{}%
 \contentsline {section}{Project Management}{11}{}%
 \contentsline {subsection}{Proposed Project Timeline}{11}{}%
-\contentsline {section}{Budget}{11}{}%
+\contentsline {section}{Budget}{12}{}%
 \contentsline {subsection}{Estimated Budget}{12}{}%
-\contentsline {section}{References}{12}{}%
+\contentsline {section}{References}{13}{}%
