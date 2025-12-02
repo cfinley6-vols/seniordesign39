@@ -4,6 +4,35 @@
 \usepackage{float}
 \begin{document}
 
+\begin{titlepage}
+    \centering
+    {\Large EECS 401/402 - Senior Design \par}
+    \vspace{1cm}
+    {\huge\bfseries Improved Briform: A Web-Based Interactive Music Education Tool\par}
+    \vspace{1cm}
+    {\Large Design Report\par}
+    \vfill
+    {\large
+    Davis Akard \\
+    Connor Finley \\
+    Viktor Potter \\
+    Ryan Thweatt \\
+    Jason West\par}
+    \vspace{1cm}
+    {\large
+    Course: EECS 401 \\
+    Instructor: Jian Huang\par}
+    \vfill
+    {\large December 2, 2025 \par}
+\end{titlepage}
+
+\section*{Executive Summary}
+The goal of our senior design project is to create a web-based interactive music education tool that supports college-level music theory and ear training. Our tool is inspired by the existing Briform platform used in some UTK music courses and other applications, but it aims to address its major drawbacks with the user interface while still keeping its strengths. Our application will allow instructors to create assignments and classes which will allow students to analyze real music and their phrase structure in diagram form, as well as receive feedback and grades for their work. These main requirements were decided based on feedback from UTK music faculty and students who have used Briform. Their primary concerns were that the existing tool feels visually cluttered and difficult to navigate, especially for new users.
+
+Technically speaking, this is implemented as a full-stack web application using Next.js with React and TypeScript on the frontend and Supabase as the backend for data storage/authentication. The frontend includes pages such as login, student and teacher hubs, classes, assignments, and our improved Briform analysis view. The backend manages user accounts, roles, classes, assignments, and saved projects, which converts to the frontend through Next.js API routes backed by Supabase. GitHub serves as our collaboration and version control platform. The application will work with primarily YouTube and possibly Spotify to let users import and play music directly within the browser. This will go hand-in-hand with the Briform-style analysis tool so that students can mark sections, phrases, and other elements on top of a timeline.
+
+Our project will be delivered in three phases: development, testing/feedback, and deployment. During development, we will implement the account login and structure, our improved Briform tool, and possibly song-to-score conversion. In the testing/feedback phase, we will build a group of college students, music and not, to use the tool, collect feedback through surveys, and enhance our application based on that. Finally, in the deployment phase, we will work closely with the UTK music faculty to present our tool and discuss its use and practicality in the real world. By the end of the project, our expected result is an instructor-tested web application that is ready for possible further deployment and actually improves the usability and clunkiness of Briform-style music education tools.
+
 % Remove page numbers from title page and TOC
 \pagestyle{empty}
 
@@ -15,6 +44,22 @@
 % Begin page numbering here
 \pagenumbering{arabic}
 \pagestyle{plain}
+
+\section*{Problem Definition and Background}
+\addcontentsline{toc}{section}{Problem Definition and Background}
+At the University of Tennessee, Knoxville and elsewhere, instructors often rely on a combination of learning management systems (such as Canvas in UTK's example), outside music theory websites, and tools like BriFormer to implement music-related assignments. While these tools are useful, faculty and students have stated that the existing Briform-style interface can be difficult to navigate and visually cluttered, especially for new users. This means that students may struggle more with the tool than with the musical concepts they are meant to be learning, and instructors would have to spend extra time explaining the interface instead of focusing on the actual music concepts themselves. Therefore, the core problem is that current tools for musical analysis and ear training do not provide a single user-friendly environment that fits into modern college music classes. For example, Briformer is explicitly designed around musical form. In an Open Music Theory worksheet on AABA and strophic form, students are instructed to ``Use the BriFormer web app to create a formal diagram'' and to click ``Create a new BriForm using a YouTube link'' for specific recordings~\cite{omt-aaba}. These uses show that BriFormer might be able to be integrated into coursework, but they also highlight its limits: it mainly functions as a standalone diagramming tool with low support for courses, dashboards, and grading.
+
+The primary people affected by this problem are music instructors and students in college-level education. Instructors need a reliable way to assign tasks and to review student work efficiently across multiple class sections, class types, and class periods. Students need an accessible tool where they can import real music examples, annotate form and phrase structure and other musical concepts, and receive quick feedback. Some other people that may be impacted could include department administrators or advisors, who care about consistency across many different courses, and the music depatment's technical staff, who have to support authentication and data management for any new tool that handles student coursework.
+
+The basic functions this design must perform are (1) allow users to load music from common media platforms (YouTube); (2) provide a timeline where students can mark sections, phrases, and other musical aspects; (3) implement account roles (student and instructor), classes, and assignments; and (4) give instructors the tools to review and grade student work. Additional features could include progress tracking and support for different types of exercises like ear training, rhythm, notation-focused or instrument-playing activities.
+
+The tool will primarily be used in two environments: during instructor-led class activities and as assigned homework or studying. Instructors should be able to project the interface in a classroom to walk through a song's form with students, while students use personal laptops with headphones to complete individual assignments possibly inside of class for attendance or outside of class for homework. For the backend environment, the system must operate in a web environment, handle multiple users at once, while ensuring basic security and privacy for students' grades and work. This means the design has to consider not only end users (students and instructors) but also aspects such as single sign-on (e.g. for UTK, implement collaboration with NetID/DuoPush), accessibility, and browser support.
+
+This project intersects music theory, ear training, and web-based learning. Students are expected to work with concepts such as strophic/AABA form and harmonic analysis, as described in open resources like \emph{Open Music Theory}. This is described as ``a natively-online open educational resource intended to serve as the primary text and workbook for undergraduate music theory curricula''~\cite{omt}. Our tool aims to enforce these resources by providing an environment where students can apply those concepts to real music that they love or teachers assign, rather than only to musical scores.
+
+Prior tools and products have provided context for our design. Teoria, for example, is described as a ``Web site dedicated to the study of Music Theory. Articles, reference, interactive exercises''~\cite{teoria-main}. A separate review notes that ``Teoria is a platform for learning music theory \& improving your ear'' and that its tutorials are ``accompanied by exercises which enable students to gain fluency with each concept''~\cite{teoria-review}. Similarly, musictheory.net states, ``introductory and intermediate music theory lessons, exercises, ear trainers, and calculators''~\cite{musictheory-main} are used. These platforms show that browser-based lessons and ear-training exercises may be effective, but they sometimes don't provide a concrete class and assignment workflow like what we want to implement. Similarly, EarMaster markets itself as ``the ultimate app for ear training, sight-singing, and rhythm training'' with ``4000+ exercises for all levels''~\cite{earmaster-main}. EarMaster Cloud, a major music-education focused platform, is promoted as ``an all-in-one solution for schools, conservatories, choirs and private studios of any size''~\cite{earmaster-cloud}, with teacher and student management tools. However, these products are standalone and not conformed to specific classes or grading schemes that depend on imported music and streaming services. In addition to these projects, we can also look at previous learning management systems such as Canvas to provide an example for class organization and assignment structure.
+
+All in all, this background suggests that there is a clear need for a web-based music education tool that combines the strengths of existing platforms and learning management systems such as Briform and Canvas, while addressing the concerns raised by instructors and students who have used BriForm. Our project is intended to fill these gaps by providing a Briform-inspired interface but with UI improvements and integrated with course workflows so that the technology supports rather than holding back the learning of music theory and ear training.
 
 \section*{The Requirement Specification}
 \addcontentsline{toc}{section}{The Requirement Specification}
@@ -89,6 +134,10 @@ One of the major design decisions for our product was whether assignments could 
 \subsection*{Spotify Integration vs. YouTube Integration - Connor Finley}
 \addcontentsline{toc}{subsection}{Spotify Integration vs. YouTube Integration - Connor Finley}
 When considering how to allow users to import music into our application, we debated between integrating Spotify or YouTube.  With what work we have done thus far, we have discovered some pros and cons about Spotify in particular.  Spotify's API is extremely intuitive, and account login is simple through OAuth.  However, Spotify's API does not allow for streaming full songs, which is a major drawback for our application.  On the other hand, YouTube's API allows for full video streaming, which is perfect for our use case.  Though we have not experimented with YouTube's API yet, we believe that the benefits of full video streaming outweigh the drawbacks of learning a new API.  Therefore, we have decided to integrate YouTube into our application for use with Briform.  While it may seem like the time investment to integrate Spotify's API went to waste, we still plan to use it in combination with a Spotify preview finder API to pull 30-second preview clips that can we used for the song-to-score functionality of our application.  By using these two APIs in tandem, we believe that we can provide a seamless experience for users to import music into our application.
+
+\subsection*{Briform-Inspired Design vs. Design-From-Scratch - Jason West}
+\addcontentsline{toc}{subsection}{Briform-Inspired Design vs. Design-From-Scratch - Jason West}
+One of the most important design choices for this project is how closely our interface should follow the existing Briform tool. Briform already supports the most important musical aspects we care about implementing, such as basic ear training and diagramming, but many users have reported that it feels too clunky to use. Our goal is to ensure the strengths of Briform still remain while improving its usability and functionality. This led us to contemplate two main choices: a Briform-inspired design which reuses its core aspects but with an updated interface, or a completely new design we would have to build from scratch. In the Briform-inspired implementation, we keep the same workflow of selecting a piece, mapping sections (e.g. A, B, transitions, etc.) and converting them to display on a timeline. The advantage of this approach is that the instructors and students who already use Briform can transfer their models to our tool easily. In this case, course assignments and tools that use Briform-style diagrams still work. However, this approach also comes with a few constraints: the original Briform layout is clunky, not mobile-friendly, and not as good with feedback, accessibility, and audio controls. This is why instead of copying over existing panels and controls, we could consider implementing our own interface from scratch. This opens the door to cleaner layouts, timelines, and integration with YouTube playback and assignments. The tradeoff is that the resulting tool may be harder to get used to for current Briform users, and we would have to invest more time not only in implementation but also in user testing and updating documents/assignments as well. This is why we chose to design a hybrid approach: a conceptual Briform-inspired design with a redesigned, less clunky UI. This allows us to keep Briform's core functionality of mapping musical sections/phrases along a timeline while reorganizing the layout, simplifying controls, and integrating good playback and assignment features. This allows us to respect current Briform users while improving the usability issues that motivated our project in the first place.
 
 \section*{Deliverables}
 \addcontentsline{toc}{section}{Deliverables}
@@ -172,5 +221,40 @@ Deployment Deliverables & 1: 00\%, 2: 00\%, 3: 80\%\\
 \hline
 \end{tabular}
 \end{table}
+
+%\section*{References}
+%\addcontentsline{toc}{section}{References}
+\begin{thebibliography}{7}
+\addcontentsline{toc}{section}{References}
+
+\bibitem{omt-aaba}
+``AABA and Strophic Form,'' \emph{Open Music Theory / VIVA Pressbooks}, worksheet PDF for BriFormer activities. [Online]. Available:
+\texttt{https://viva.pressbooks.pub/app/uploads/sites/12/2019/08/WK-AABA-and-strophic-forms.pdf}
+
+\bibitem{omt}
+``Open Music Theory,'' VIVA Pressbooks. [Online]. Available:
+\texttt{https://viva.pressbooks.pub/openmusictheory/}
+
+\bibitem{teoria-main}
+``teor\'{\i}a: Music Theory Web,'' \emph{teoria.com}. [Online]. Available:
+\texttt{https://www.teoria.com/}
+
+\bibitem{teoria-review}
+S.~Richter, ``Teoria: a web-based theory \& ear-training platform,'' \emph{Evolving Educators Blog}, Oct.~2019. [Online]. Available:
+\texttt{https://evolving.opened.ca/2019/10/08/teoria-tool/}
+
+\bibitem{musictheory-main}
+``musictheory.net,'' \emph{Music Theory Online Lessons and Exercises}. [Online]. Available:
+\texttt{https://www.musictheory.net/}
+
+\bibitem{earmaster-main}
+``EarMaster --- Boost Your Music Skills,'' \emph{EarMaster Official Site}. [Online]. Available:
+\texttt{https://www.earmaster.com/}
+
+\bibitem{earmaster-cloud}
+``EarMaster Cloud for Education,'' \emph{EarMaster Official Site}. [Online]. Available:
+\texttt{https://www.earmaster.com/products/ear-training-sight-singing/earmaster-cloud-edition.html}
+
+\end{thebibliography}
 
 \end{document}
