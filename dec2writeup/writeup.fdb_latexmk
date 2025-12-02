@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1764604106.10591 "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" "writeup.pdf" "writeup" 1764604106.44032 0
-  "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" 1764604105.86957 18495 d87669ddc51956b6886f98ba32fccfab ""
+["pdflatex"] 1764704143.68494 "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" "writeup.pdf" "writeup" 1764704143.99559 0
+  "/Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex" 1764704142.6646 31527 4e542b4b805af8002a5e4221de78bcd1 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/map/fontname/texfonts.map" 1741388039 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/map/pdftex/updmap/pdftex.map" 1741388039 5466553 2748998d7db8078826afa1f272036265 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmbx12.tfm" 1741388039 1324 c910af8c371558dc20f2d7822f66fe64 ""
@@ -15,9 +15,12 @@
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm" 1741388039 1116 933a60c408fc0a863a92debe84b2d294 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm" 1741388039 1120 8b7d695260f3cff42e636090a8002094 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmti12.tfm" 1741388039 1484 ed72f8f5cf654cda15ecc8e32bfcbee5 ""
+  "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm" 1741388039 772 9a936b7f5e2ff0557fce0f62822f0bbf ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1741388039 32080 340ef9bf63678554ee606688e7b5339d ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1741388039 32722 d7379af29a190c3f453aba36302ff5a9 ""
+  "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb" 1741388039 32362 179c33bbf43f19adbb3825bb4e36e57a ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb" 1741388039 36118 fad905eba93cff5bce1e185fe980a177 ""
+  "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb" 1741388039 24252 1e4e051947e12dfb50fee0b7f4e26e3a ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1741388039 71627 94eb9990bed73c364d7f53f960cc8c5b ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/base/article.cls" 1741388039 20144 63d8bacaf52e5abf4db3bc322373e1d4 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/base/size12.clo" 1741388039 8449 ffe4ba2166a344827c3a832d1d5e0a91 ""
@@ -36,11 +39,11 @@
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/web2c/texmf.cnf" 1741388039 42151 79f67285bdd95beca4d137b380b4b9e5 ""
   "/opt/homebrew/Cellar/texlive/20250308_1/share/texmf-var/web2c/pdftex/pdflatex.fmt" 1741388039 3346141 1288109d02d1c772df65535881471649 ""
   "images/401Technical.drawio.png" 1764117539.17098 48327 96ba3c963c5553243c986ac255f25115 ""
-  "writeup.aux" 1764604106.41989 2293 c99f6911c2f643180c1c8ed473e91f14 "pdflatex"
-  "writeup.lof" 1764604106.42048 79 12b681eda696d19282f500e55a26a88a "pdflatex"
-  "writeup.lot" 1764604106.42046 163 e260222fa7106a59ea24f337f891abcd "pdflatex"
-  "writeup.tex" 1764604105.86957 18495 d87669ddc51956b6886f98ba32fccfab ""
-  "writeup.toc" 1764604106.42041 1112 f18c136220858a78785308adce82c866 "pdflatex"
+  "writeup.aux" 1764704143.97206 2971 42d3e0380ccf5c042c5d5a352474dc03 "pdflatex"
+  "writeup.lof" 1764704143.97268 79 207bbbf269946a08e04cb6bd9b097e5f "pdflatex"
+  "writeup.lot" 1764704143.97266 165 becabdc467bb38a9258120834214b1e2 "pdflatex"
+  "writeup.tex" 1764704142.6646 31527 4e542b4b805af8002a5e4221de78bcd1 ""
+  "writeup.toc" 1764704143.97263 1323 3a7a73fedbe108d4413b9d4d359d31ce "pdflatex"
   (generated)
   "writeup.aux"
   "writeup.lof"
