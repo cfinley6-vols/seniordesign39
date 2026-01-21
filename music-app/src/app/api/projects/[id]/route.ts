@@ -1,4 +1,5 @@
 // music-app/src/app/api/projects/[id]/route.ts
+// Deprecated
 import { NextRequest, NextResponse } from "next/server";
 import { getProjectById, updateProjectName, deleteProject } from "@/app/lib/db";
 import { cookies } from "next/headers";
