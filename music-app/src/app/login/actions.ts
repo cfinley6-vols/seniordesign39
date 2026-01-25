@@ -28,15 +28,23 @@ export async function login(formData: FormData) {
 export async function signup(formData: FormData) {
     const supabase = await createClient()
 
-    const data = {
-        email: formData.get('email') as string,
-        password: formData.get('password') as string,
-    }
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const name = formData.get('name') as string // <--- Get the name
 
-    const { error } = await supabase.auth.signUp(data)
+    const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+            // This data gets passed to the Trigger we wrote above!
+            data: {
+                full_name: name,
+            },
+        },
+    })
 
     if (error) {
-        redirect('/login?error=Signup failed')
+        return redirect('/login?error=Signup failed')
     }
 
     revalidatePath('/', 'layout')
@@ -48,5 +56,5 @@ export async function signout() {
     await supabase.auth.signOut()
 
     revalidatePath('/', 'layout')
-    redirect('/login')
+    redirect('/')
 }

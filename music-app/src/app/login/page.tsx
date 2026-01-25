@@ -20,6 +20,12 @@ export default async function LoginPage({
 			)}
 
 			<input
+				name="name"
+				placeholder="Full Name"
+				required
+				className="border p-2 rounded"
+			/>
+			<input
 				name="email"
 				placeholder="Email"
 				required
