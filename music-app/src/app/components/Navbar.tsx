@@ -1,6 +1,5 @@
 import AuthButton from "@/app/components/AuthButton";
 import HomePageButton from "@/app/components/HomePageButton";
-import Link from 'next/link';
 
 export default function Navbar() {
 	return (
