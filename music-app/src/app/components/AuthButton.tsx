@@ -1,49 +1,11 @@
 // music-app/src/app/components/AuthButton.tsx
-"use client"
-import { useEffect, useState } from "react"
+import { createClient } from "@/app/lib/supabase/server"
 import Link from "next/link"
+import { signout } from "@/app/login/actions"
 
-interface User { id: string; email: string | null }
-
-export default function AuthButton() {
-	const [user, setUser] = useState<User | null>(null)
-	const [loading, setLoading] = useState(true)
-
-	useEffect(() => {
-		let mounted = true
-			; (async () => {
-				try {
-					const res = await fetch("/api/me", { credentials: "include" })
-					if (!mounted) return
-					if (res.ok) {
-						const data = await res.json()
-						setUser(data)
-					} else {
-						setUser(null)
-					}
-				} catch {
-					setUser(null)
-				} finally {
-					if (mounted) setLoading(false)
-				}
-			})()
-		return () => { mounted = false }
-	}, [])
-
-	const handleLogout = async () => {
-		try {
-			const res = await fetch("/api/auth/logout", {
-				method: "POST",
-				credentials: "include",
-			})
-			if (res.ok) setUser(null)
-			else console.error("Logout failed")
-		} catch (e) {
-			console.error(e)
-		}
-	}
-
-	if (loading) return <span className="text-gray-400">...</span>
+export default async function AuthButton() {
+	const supabase = await createClient()
+	const { data: { user } } = await supabase.auth.getUser()
 
 	if (!user) {
 		return (
@@ -51,21 +13,25 @@ export default function AuthButton() {
 				<Link href="/login" className="px-4 py-1 font-semibold text-white rounded-full bg-blue-600 hover:bg-blue-700 transition">
 					Login
 				</Link>
-				<Link href="/register" className="px-4 py-1 font-semibold text-white rounded-full bg-green-600 hover:bg-green-700 transition">
-					Register
-				</Link>
 			</div>
 		)
 	}
 
 	return (
 		<div className="flex items-center gap-3">
-			<Link href="/dashboard" className="text-gray-700 font-medium">
+			<Link href="/dashboard" className="text-gray-700 font-medium hover:underline">
 				{user.email}
 			</Link>
-			<button onClick={handleLogout} className="px-3 py-1 text-sm text-red-600 bg-gray-200 rounded-md hover:bg-gray-300 transition">
-				Logout
-			</button>
+
+			{/* 4. Use a Form Action to trigger the Server Action */}
+			<form action={signout}>
+				<button
+					type="submit"
+					className="px-3 py-1 text-sm text-red-600 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+				>
+					Logout
+				</button>
+			</form>
 		</div>
 	)
 }
