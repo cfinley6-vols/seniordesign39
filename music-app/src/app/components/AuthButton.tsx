@@ -11,7 +11,7 @@ export default async function AuthButton() {
 		return (
 			<div className="flex gap-2">
 				<Link href="/login" className="px-4 py-1 font-semibold text-white rounded-full bg-blue-600 hover:bg-blue-700 transition">
-					Login
+					Login / Register
 				</Link>
 			</div>
 		)
@@ -19,7 +19,7 @@ export default async function AuthButton() {
 
 	return (
 		<div className="flex items-center gap-3">
-			<Link href="/dashboard" className="text-gray-700 font-medium hover:underline">
+			<Link href="/dashboard" className="px-4 py-1 rounded-full bg-[#FF8200] text-white font-medium hover:bg-[#e67300] transition">
 				{user.email}
 			</Link>
 
@@ -27,7 +27,7 @@ export default async function AuthButton() {
 			<form action={signout}>
 				<button
 					type="submit"
-					className="px-3 py-1 text-sm text-red-600 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+					className="px-4 py-1 font-semibold text-white rounded-full bg-red-500 hover:bg-red-700 transition"
 				>
 					Logout
 				</button>
