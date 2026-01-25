@@ -4,55 +4,55 @@ import { useRouter } from "next/navigation";
 import Link from "next/link"
 
 interface User {
-	id: string;
-	email: string;
+    id: string;
+    email: string;
 }
 export default function TeacherLanding() {
     return (
         <div className="min-h-screen p-24">
-        <h1 className="text-4xl font-bold mb-12 text-center">
-            Teacher Landing Page
-        </h1>
+            <h1 className="text-4xl font-bold mb-12 text-center">
+                Teacher Landing Page
+            </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            
-            <Link
-            href=""
-            className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
-            >
-            <h2 className="text-2xl font-semibold mb-2 group-hover:underline">
-                Classes
-            </h2>   
-            <p className="text-gray-600">
-                View and manage your classes
-            </p>
-            </Link>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
 
-            <Link
-            href="/dashboard"
-            className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
-            >
-            <h2 className="text-2xl font-semibold mb-2 group-hover:underline">
-                Dashboard
-            </h2>
-            <p className="text-gray-600">
-                Sends You To The Dashboard
-            </p>
-            </Link>
+                <Link
+                    href=""
+                    className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+                >
+                    <h2 className="text-2xl font-semibold mb-2 group-hover:underline">
+                        Classes
+                    </h2>
+                    <p className="text-gray-600">
+                        View and manage your classes
+                    </p>
+                </Link>
 
-            <Link
-            href="/briform"
-            className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
-            >
-            <h2 className="text-2xl font-semibold mb-2 group-hover:underline">
-                Briform
-            </h2>
-            <p className="text-gray-600">
-                Sends you to the briform page
-            </p>
-            </Link>
+                <Link
+                    href="/dashboard"
+                    className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+                >
+                    <h2 className="text-2xl font-semibold mb-2 group-hover:underline">
+                        Dashboard
+                    </h2>
+                    <p className="text-gray-600">
+                        Sends You To The Dashboard
+                    </p>
+                </Link>
 
-        </div>
+                <Link
+                    href="/briform"
+                    className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
+                >
+                    <h2 className="text-2xl font-semibold mb-2 group-hover:underline">
+                        Briform
+                    </h2>
+                    <p className="text-gray-600">
+                        Sends you to the briform page
+                    </p>
+                </Link>
+
+            </div>
         </div>
     )
 }
