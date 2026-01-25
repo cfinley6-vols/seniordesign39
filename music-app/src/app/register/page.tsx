@@ -35,7 +35,7 @@ export default function RegisterPage() {
 	};
 
 	return (
-		<div className="max-w-md mx-auto mt-20 p-6 bg-white rounded-md shadow">
+		<div className="max-w-md mx-auto mt-20 p-6 bg-[#FF8200] rounded-md shadow">
 			<h1 className="text-2xl font-semibold mb-4">Create an account</h1>
 			<form onSubmit={handleSubmit} className="space-y-4">
 				<div>

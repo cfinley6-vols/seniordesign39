@@ -8,7 +8,7 @@ export default function Navbar() {
 			<div className="max-w-7xl mx-auto px-2 py-4 flex items-center justify-between">
 				<Link
 					href="/"
-					className="text-xl font-bold text-[#FF8200] hover:text-orange-800 transition"
+					className="text-xl font-bold text-[#FF8200] hover:text-orange-700 transition"
 					onClick={() => location.assign('/')}
 				>
 					Music Education App
