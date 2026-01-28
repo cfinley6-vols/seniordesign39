@@ -25,7 +25,10 @@ export default async function AuthButton() {
 
 	return (
 		<div className="flex items-center gap-3">
-			<Link href="/dashboard" className="px-4 py-1 rounded-full bg-[#FF8200] text-white font-medium hover:bg-[#e67300] transition">
+			<Link
+				href="/dashboard"
+				className="px-4 py-1 rounded-full bg-[#FF8200] text-white font-medium hover:bg-[#e67300] transition"
+			>
 				{profile ? profile.name : 'Dashboard'}
 			</Link>
 

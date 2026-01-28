@@ -1,6 +1,8 @@
+// music-app/src/app/dashboard/page.tsx
 import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { signout } from '../login/actions'
+import BriCard from './BriCard'
+import CreateButton from './CreateButton'
 
 export default async function DashboardPage() {
 	const supabase = await createClient()
@@ -23,23 +25,39 @@ export default async function DashboardPage() {
 		redirect('/login')
 	}
 
+	// 1. Fetch real projects from Supabase
+	// We order by 'updated_at' so the most recent ones appear first
+	const { data: projects } = await supabase
+		.from('bri_projects')
+		.select('id, title, updated_at')
+		.order('updated_at', { ascending: false })
+
 	return (
-		<div className="p-10">
-			<h1 className="text-3xl font-bold">Dashboard</h1>
-			<p className="mt-4">Welcome back, {profile.name}</p>
+		<div className="p-8 max-w-7xl mx-auto">
+			{/* Header Section */}
+			<header className="mb-8 flex justify-between items-end">
+				<div>
+					<h1 className="text-3xl font-bold text-gray-400">My Projects</h1>
+					<p className="text-gray-500 mt-1">Welcome back, {profile.name}</p>
+				</div>
+			</header>
 
-			<div className="mt-8 p-6 border rounded-lg shadow-sm bg-gray-500">
-				<h2 className="font-semibold mb-2">Your Data</h2>
-				<pre className="text-xs overflow-auto">
-					{JSON.stringify(user, null, 2)}
-				</pre>
+			{/* Grid Layout */}
+			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+				<CreateButton />
+
+				{/* 2. Map over the real data */}
+				{/* The 'projects' array might be null if the fetch fails, so we add || [] */}
+				{(projects || []).map((project) => (
+					<BriCard
+						key={project.id}
+						id={project.id}
+						title={project.title}
+						// We format the date to be human-readable
+						updatedAt={new Date(project.updated_at).toLocaleDateString()}
+					/>
+				))}
 			</div>
-
-			<form action={signout} className="mt-8">
-				<button className="bg-red-500 text-white px-4 py-2 rounded">
-					Sign Out
-				</button>
-			</form>
 		</div>
 	)
 }
