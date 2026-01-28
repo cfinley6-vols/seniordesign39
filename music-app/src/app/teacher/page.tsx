@@ -32,14 +32,14 @@ export default async function TeacherLanding() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
 
                 <Link
-                    href=""
+                    href="/teacher/youtube_test"
                     className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
                 >
                     <h2 className="text-2xl font-semibold mb-2 group-hover:underline">
-                        Classes
+                        Youtube
                     </h2>
                     <p className="text-gray-600">
-                        View and manage your classes
+                        Access The Youtube API Test Page
                     </p>
                 </Link>
 
