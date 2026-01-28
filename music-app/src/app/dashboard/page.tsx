@@ -53,8 +53,7 @@ export default async function DashboardPage() {
 						key={project.id}
 						id={project.id}
 						title={project.title}
-						// We format the date to be human-readable
-						updatedAt={new Date(project.updated_at).toLocaleDateString()}
+						updatedAt={project.updated_at}
 					/>
 				))}
 			</div>
