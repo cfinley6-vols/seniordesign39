@@ -1,3 +1,4 @@
+// music-app/src/app/components/Navbar.tsx
 import AuthButton from "@/app/components/AuthButton";
 import HomePageButton from "@/app/components/HomePageButton";
 

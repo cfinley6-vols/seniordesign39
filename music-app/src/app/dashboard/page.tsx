@@ -1,6 +1,8 @@
 import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { signout } from '../login/actions'
+import BriCard from './BriCard'
+import CreateButton from './CreateButton'
 
 export default async function DashboardPage() {
 	const supabase = await createClient()
@@ -23,23 +25,40 @@ export default async function DashboardPage() {
 		redirect('/login')
 	}
 
+	// Mock Project Data, will replace with fetched data later
+	const projects = [
+		{ id: '1', title: 'Jazz Standard Analysis', updatedAt: '2 days ago' },
+		{ id: '2', title: 'Symphony No. 5', updatedAt: '1 week ago' },
+		{ id: '3', title: 'Pop Song Structure', updatedAt: '3 weeks ago' },
+	]
+
 	return (
-		<div className="p-10">
-			<h1 className="text-3xl font-bold">Dashboard</h1>
-			<p className="mt-4">Welcome back, {profile.name}</p>
+		<div className="p-8 max-w-7xl mx-auto">
+			{/* Header Section */}
+			<header className="mb-8 flex justify-between items-end">
+				<div>
+					<h1 className="text-3xl font-bold text-gray-400">My Projects</h1>
+					<p className="text-gray-500 mt-1">Welcome back, {profile.name}</p>
+				</div>
+			</header>
 
-			<div className="mt-8 p-6 border rounded-lg shadow-sm bg-gray-500">
-				<h2 className="font-semibold mb-2">Your Data</h2>
-				<pre className="text-xs overflow-auto">
-					{JSON.stringify(user, null, 2)}
-				</pre>
+			{/* Grid Layout */}
+			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+				{/* The "Create New" Card always comes first */}
+				<CreateButton />
+
+				{/* Map through the projects */}
+				{projects.map((project) => (
+					<BriCard
+						key={project.id}
+						id={project.id}
+						title={project.title}
+						updatedAt={project.updatedAt}
+					/>
+				))}
+
 			</div>
-
-			<form action={signout} className="mt-8">
-				<button className="bg-red-500 text-white px-4 py-2 rounded">
-					Sign Out
-				</button>
-			</form>
 		</div>
 	)
 }
