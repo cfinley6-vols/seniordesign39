@@ -14,7 +14,6 @@ export default function BriCard({ id, title, updatedAt }: ProjectCardProps) {
 	const [isPending, startTransition] = useTransition()
 
 	// UI States
-	const [isMenuOpen, setIsMenuOpen] = useState(false)
 	const [isRenaming, setIsRenaming] = useState(false)
 	const [showDeleteModal, setShowDeleteModal] = useState(false)
 
