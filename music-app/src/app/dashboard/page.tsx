@@ -13,10 +13,20 @@ export default async function DashboardPage() {
 		redirect('/login')
 	}
 
+	const { data: profile } = await supabase
+		.from('users')
+		.select('name')
+		.eq('id', user.id)
+		.single()
+
+	if (!profile) {
+		redirect('/login')
+	}
+
 	return (
 		<div className="p-10">
 			<h1 className="text-3xl font-bold">Dashboard</h1>
-			<p className="mt-4">Welcome back, {user.email}</p>
+			<p className="mt-4">Welcome back, {profile.name}</p>
 
 			<div className="mt-8 p-6 border rounded-lg shadow-sm bg-gray-500">
 				<h2 className="font-semibold mb-2">Your Data</h2>
