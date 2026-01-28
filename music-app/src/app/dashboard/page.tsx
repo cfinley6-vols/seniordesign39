@@ -1,6 +1,6 @@
+// music-app/src/app/dashboard/page.tsx
 import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { signout } from '../login/actions'
 import BriCard from './BriCard'
 import CreateButton from './CreateButton'
 
@@ -25,12 +25,12 @@ export default async function DashboardPage() {
 		redirect('/login')
 	}
 
-	// Mock Project Data, will replace with fetched data later
-	const projects = [
-		{ id: '1', title: 'Jazz Standard Analysis', updatedAt: '2 days ago' },
-		{ id: '2', title: 'Symphony No. 5', updatedAt: '1 week ago' },
-		{ id: '3', title: 'Pop Song Structure', updatedAt: '3 weeks ago' },
-	]
+	// 1. Fetch real projects from Supabase
+	// We order by 'updated_at' so the most recent ones appear first
+	const { data: projects } = await supabase
+		.from('projects')
+		.select('id, title, updated_at')
+		.order('updated_at', { ascending: false })
 
 	return (
 		<div className="p-8 max-w-7xl mx-auto">
@@ -44,20 +44,19 @@ export default async function DashboardPage() {
 
 			{/* Grid Layout */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-
-				{/* The "Create New" Card always comes first */}
 				<CreateButton />
 
-				{/* Map through the projects */}
-				{projects.map((project) => (
+				{/* 2. Map over the real data */}
+				{/* The 'projects' array might be null if the fetch fails, so we add || [] */}
+				{(projects || []).map((project) => (
 					<BriCard
 						key={project.id}
 						id={project.id}
 						title={project.title}
-						updatedAt={project.updatedAt}
+						// We format the date to be human-readable
+						updatedAt={new Date(project.updated_at).toLocaleDateString()}
 					/>
 				))}
-
 			</div>
 		</div>
 	)
