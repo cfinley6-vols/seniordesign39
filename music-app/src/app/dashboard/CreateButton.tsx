@@ -8,7 +8,7 @@ export default function CreateButton() {
 
     const handleClick = () => {
         startTransition(async () => {
-            const title = window.prompt("Enter a name for your new project:", "New Symphony")
+            const title = window.prompt("Enter a name for your new project:", "New Project")
 
             // If they clicked Cancel, stop.
             if (title === null) return
