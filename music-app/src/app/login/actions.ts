@@ -30,13 +30,12 @@ export async function signup(formData: FormData) {
 
     const email = formData.get('email') as string
     const password = formData.get('password') as string
-    const name = formData.get('name') as string // <--- Get the name
+    const name = formData.get('name') as string
 
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-            // This data gets passed to the Trigger we wrote above!
             data: {
                 full_name: name,
             },

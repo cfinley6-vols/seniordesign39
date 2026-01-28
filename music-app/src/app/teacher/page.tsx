@@ -1,13 +1,28 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link"
+import { createClient } from '@/app/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
-interface User {
-    id: string;
-    email: string;
-}
-export default function TeacherLanding() {
+export default async function TeacherLanding() {
+    const supabase = await createClient()
+
+    // 1. Check if user is logged in
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    // 2. If no user, kick them out
+    if (error || !user) {
+        redirect('/login')
+    }
+
+    const { data: profile } = await supabase
+        .from('users')
+        .select('name')
+        .eq('id', user.id)
+        .single()
+
+    if (!profile) {
+        redirect('/login')
+    }
+
     return (
         <div className="min-h-screen p-24">
             <h1 className="text-4xl font-bold mb-12 text-center">
