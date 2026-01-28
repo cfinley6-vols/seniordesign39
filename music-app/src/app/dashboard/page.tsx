@@ -28,7 +28,7 @@ export default async function DashboardPage() {
 	// 1. Fetch real projects from Supabase
 	// We order by 'updated_at' so the most recent ones appear first
 	const { data: projects } = await supabase
-		.from('projects')
+		.from('bri_projects')
 		.select('id, title, updated_at')
 		.order('updated_at', { ascending: false })
 
