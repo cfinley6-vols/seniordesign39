@@ -12,6 +12,7 @@ interface ProjectCardProps {
 
 export default function BriCard({ id, title, updatedAt }: ProjectCardProps) {
 	const [isPending, startTransition] = useTransition()
+	const [isClient, setIsClient] = useState(false)
 
 	// UI States
 	const [isRenaming, setIsRenaming] = useState(false)
@@ -34,6 +35,10 @@ export default function BriCard({ id, title, updatedAt }: ProjectCardProps) {
 			inputRef.current.select()
 		}
 	}, [isRenaming])
+
+	useEffect(() => {
+	    setIsClient(true)
+	}, [])
 
 	const handleRenameSubmit = async () => {
 		setIsRenaming(false)
@@ -113,7 +118,7 @@ export default function BriCard({ id, title, updatedAt }: ProjectCardProps) {
 						</h3>
 					)}
 
-					<p className="text-xs text-gray-500 mt-1">{formattedDate}</p>
+					<p className="text-xs text-gray-500 mt-1">{isClient ? formattedDate : "Loading..."}</p>
 
 					{/* 3. ACTION BUTTONS (Visible on Hover) */}
 					{/* We hide these while renaming to keep the UI clean */}
