@@ -1,4 +1,5 @@
 // music-app/src/app/components/TrackSelector.tsx
+// Legacy Code
 "use client";
 import { useState } from "react"
 
