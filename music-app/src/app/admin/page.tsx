@@ -2,7 +2,7 @@ import Link from "next/link"
 import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-export default async function TeacherLanding() {
+export default async function AdminLanding() {
     const supabase = await createClient()
 
     // 1. Check if user is logged in
@@ -26,13 +26,13 @@ export default async function TeacherLanding() {
     return (
         <div className="min-h-screen p-24">
             <h1 className="text-4xl font-bold mb-12 text-center">
-                Teacher Landing Page
+                Admin Landing Page
             </h1>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
 
                 <Link
-                    href="/teacher/youtube_test"
+                    href="/admin/youtube_test"
                     className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
                 >
                     <h2 className="text-2xl font-semibold mb-2 group-hover:underline">

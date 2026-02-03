@@ -9,7 +9,7 @@ export default async function AdminButton() {
     if (user) {
         return (
             <div className= "flex items-center gap-3">
-                <Link href="/teacher" className="px-4 py-1 font-semibold text-white rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition">
+                <Link href="/admin" className="px-4 py-1 font-semibold text-white rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition">
                     Admin
                 </Link>
             </div>
