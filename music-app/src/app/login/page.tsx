@@ -41,14 +41,14 @@ export default async function LoginPage({
 
 			<button
 				formAction={login}
-				className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+				className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 active:bg-blue-800"
 			>
 				Sign In
 			</button>
 
 			<button
 				formAction={signup}
-				className="bg-gray-100 text-gray-700 p-2 rounded hover:bg-gray-200"
+				className="bg-gray-100 text-gray-700 p-2 rounded hover:bg-gray-200 active:bg-gray-300"
 			>
 				Sign Up
 			</button>

@@ -7,7 +7,7 @@ export default function HomePageButton() {
         <div>
             <Link
                 href="/"
-                className="text-xl font-bold text-[#FF8200] hover:text-orange-700 transition"
+                className="text-xl font-bold text-[#FF8200] hover:text-[#D67000] active:text-[#B65600] transition"
                 onClick={() => location.assign('/')}
             >
                 Music Education App

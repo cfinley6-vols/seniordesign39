@@ -25,6 +25,7 @@ export default function TestYouTubePage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {if (e.key == "Enter")  search(); } }
           placeholder="Search YouTube"
           style={{ padding: 8, width: 300 }}
         />
