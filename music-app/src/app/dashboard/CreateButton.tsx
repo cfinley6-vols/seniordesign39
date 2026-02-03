@@ -1,16 +1,29 @@
 // music-app/src/app/dashboard/CreateButton.tsx
 "use client"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { useState, useRef, useEffect, useTransition } from "react"
 import { createProject } from "./actions" // Import the action we just made
 
 export default function CreateButton() {
     const [isPending, startTransition] = useTransition()
-
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [newTitle, setNewTitle] = useState("")
-
     // For focusing on the input when the modal opens
     const inputRef = useRef<HTMLInputElement>(null)
+
+	// Navigation hook initialization
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const pathname = usePathname()
+
+	useEffect(() => {
+		if (searchParams.get("trigger") === "create") {
+			setNewTitle("New Project")
+			setShowCreateModal(true)
+
+			router.replace(pathname, { scroll: false } )
+		}
+	})
 
     useEffect(() => {
         if (showCreateModal && inputRef.current) {

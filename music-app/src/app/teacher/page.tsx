@@ -56,7 +56,7 @@ export default async function TeacherLanding() {
                 </Link>
 
                 <Link
-                    href="/briform"
+                    href="/dashboard?trigger=create"
                     className="bg-green-500 hover:bg-blue-500 border rounded-xl p-8 shadow hover:shadow-lg hover:-translate-y-1 transition-all duration-200"
                 >
                     <h2 className="text-2xl font-semibold mb-2 group-hover:underline">

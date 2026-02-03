@@ -1,3 +1,4 @@
+// music-app/src/app/dashboard/actions.ts
 'use server'
 import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
