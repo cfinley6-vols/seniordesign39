@@ -1,6 +1,7 @@
 // src/app/briform/[id]/page.tsx
 import { createClient } from '@/app/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
+import YouTubeEmbed from './YouTubeEmbed'
 
 interface ProjectPageProps {
     params: Promise<{ id: string }>
@@ -57,11 +58,8 @@ export default async function ProjectEditorPage({ params }: ProjectPageProps) {
             </header>
 
             {/* The Main Workspace (Where your canvas will go) */}
-            <main className="flex-1 bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-                <div className="text-center text-gray-400">
-                    <p className="mb-2 text-lg">Briformer Canvas Placeholder</p>
-                    <p className="text-sm">Diagram data will render here</p>
-                </div>
+            <main className="flex-1 bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6">
+                <YouTubeEmbed />
             </main>
         </div>
     )
