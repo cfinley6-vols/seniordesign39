@@ -81,7 +81,7 @@ export default function BriCard({ id, title, updatedAt }: ProjectCardProps) {
 
 	return (
 		<>
-			<div className={`group relative flex flex-col border rounded-lg overflow-hidden bg-white transition hover:shadow-md hover:scale-105 ${isPending ? "opacity-50" : ""}`}>
+			<div className={`group relative flex flex-col border border-gray-300 rounded-lg overflow-hidden bg-white transition hover:shadow-md hover:scale-105 ${isPending ? "opacity-50" : ""}`}>
 
 				{/* 1. Main Clickable Area */}
 				{/* If renaming, we show a plain div so clicking doesn't take you to the page */}
@@ -96,7 +96,7 @@ export default function BriCard({ id, title, updatedAt }: ProjectCardProps) {
 				)}
 
 				{/* 2. Metadata Area */}
-				<div className="p-4 border-t relative">
+				<div className="p-4 border-t border-gray-200 relative">
 
 					{/* INLINE RENAME INPUT vs TITLE DISPLAY */}
 					{isRenaming ? (

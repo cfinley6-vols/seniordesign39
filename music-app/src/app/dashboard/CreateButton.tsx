@@ -65,7 +65,7 @@ export default function CreateButton() {
                     h-full min-h-[200px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2 transition hover:scale-105
                     ${isPending
                         ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
-                        : "border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-400 hover:bg-[#444444]"
+                        : "border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-400 hover:bg-gray-100 cursor-pointer"
                     }
                 `}
             >
@@ -99,7 +99,7 @@ export default function CreateButton() {
                             onChange={(e) => setNewTitle(e.target.value)}
                             onKeyDown={handleKeyDown}
                             className="w-full border rounded-md px-3 py-2 mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                            placeholder="e.g. Summer Symphony"
+                            placeholder="e.g. New Project"
                         />
 
                         <div className="flex justify-end gap-3">
