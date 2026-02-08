@@ -1,8 +1,0 @@
-\contentsline {section}{Deliverables}{1}{}%
-\contentsline {subsection}{Development}{1}{}%
-\contentsline {subsection}{Testing/Feedback}{1}{}%
-\contentsline {subsection}{Deployment}{1}{}%
-\contentsline {section}{Project Management}{2}{}%
-\contentsline {subsection}{Proposed Project Timeline}{2}{}%
-\contentsline {section}{Budget}{3}{}%
-\contentsline {subsection}{Estimated Budget}{3}{}%
