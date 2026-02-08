@@ -12,15 +12,15 @@
 \contentsline {subsection}{Briform-Inspired Design vs. Design-From-Scratch - Jason West}{9}{}%
 \contentsline {section}{Product Development \& Test/Evaluation Plan}{10}{}%
 \contentsline {subsection}{Prototyping}{10}{}%
-\contentsline {subsection}{Testing Plan}{11}{}%
-\contentsline {subsection}{Iterations}{11}{}%
-\contentsline {section}{Social Impact Evaluation}{11}{}%
-\contentsline {section}{Deliverables and Milestones}{11}{}%
-\contentsline {subsection}{Development}{11}{}%
-\contentsline {subsection}{Testing/Feedback}{11}{}%
-\contentsline {subsection}{Deployment}{12}{}%
-\contentsline {section}{Project Management}{12}{}%
-\contentsline {subsection}{Proposed Project Timeline}{12}{}%
-\contentsline {section}{Budget}{13}{}%
-\contentsline {subsection}{Estimated Budget}{13}{}%
-\contentsline {section}{References}{14}{}%
+\contentsline {subsection}{Development Process}{11}{}%
+\contentsline {subsection}{Iterations}{12}{}%
+\contentsline {section}{Social Impact Evaluation}{12}{}%
+\contentsline {section}{Deliverables and Milestones}{12}{}%
+\contentsline {subsection}{Development}{12}{}%
+\contentsline {subsection}{Testing/Feedback}{12}{}%
+\contentsline {subsection}{Deployment}{13}{}%
+\contentsline {section}{Project Management}{13}{}%
+\contentsline {subsection}{Proposed Project Timeline}{13}{}%
+\contentsline {section}{Budget}{14}{}%
+\contentsline {subsection}{Estimated Budget}{14}{}%
+\contentsline {section}{References}{15}{}%
