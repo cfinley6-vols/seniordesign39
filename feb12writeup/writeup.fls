@@ -1,7 +1,7 @@
-PWD /Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup
+PWD /Users/cfinleyair/Documents/College/Spring 2026/COSC402/seniordesign39/feb12writeup
 INPUT /opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/web2c/texmf.cnf
 INPUT /opt/homebrew/Cellar/texlive/20250308_1/share/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT /Users/cfinleyair/Documents/College/Fall 2025/COSC401/seniordesign39/dec2writeup/writeup.tex
+INPUT /Users/cfinleyair/Documents/College/Spring 2026/COSC402/seniordesign39/feb12writeup/writeup.tex
 OUTPUT writeup.log
 INPUT /opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/base/article.cls
 INPUT /opt/homebrew/Cellar/texlive/20250308_1/share/texmf-dist/tex/latex/base/article.cls

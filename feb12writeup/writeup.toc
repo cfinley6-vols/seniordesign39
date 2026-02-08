@@ -10,9 +10,11 @@
 \contentsline {subsection}{Auto-Grading \& Manual Grading vs. Strictly Manual Grading - Viktor Potter}{8}{}%
 \contentsline {subsection}{Spotify Integration vs. YouTube Integration - Connor Finley}{9}{}%
 \contentsline {subsection}{Briform-Inspired Design vs. Design-From-Scratch - Jason West}{9}{}%
-\contentsline {section}{Deliverables}{10}{}%
+\contentsline {section}{Product Development \& Test/Evaluation Plan}{10}{}%
+\contentsline {section}{Social Impact Evaluation}{10}{}%
+\contentsline {section}{Deliverables and Milestones}{10}{}%
 \contentsline {subsection}{Development}{10}{}%
-\contentsline {subsection}{Testing/Feedback}{10}{}%
+\contentsline {subsection}{Testing/Feedback}{11}{}%
 \contentsline {subsection}{Deployment}{11}{}%
 \contentsline {section}{Project Management}{11}{}%
 \contentsline {subsection}{Proposed Project Timeline}{11}{}%
