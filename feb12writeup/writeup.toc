@@ -11,13 +11,16 @@
 \contentsline {subsection}{Spotify Integration vs. YouTube Integration - Connor Finley}{9}{}%
 \contentsline {subsection}{Briform-Inspired Design vs. Design-From-Scratch - Jason West}{9}{}%
 \contentsline {section}{Product Development \& Test/Evaluation Plan}{10}{}%
-\contentsline {section}{Social Impact Evaluation}{10}{}%
-\contentsline {section}{Deliverables and Milestones}{10}{}%
-\contentsline {subsection}{Development}{10}{}%
+\contentsline {subsection}{Prototyping}{10}{}%
+\contentsline {subsection}{Testing Plan}{11}{}%
+\contentsline {subsection}{Iterations}{11}{}%
+\contentsline {section}{Social Impact Evaluation}{11}{}%
+\contentsline {section}{Deliverables and Milestones}{11}{}%
+\contentsline {subsection}{Development}{11}{}%
 \contentsline {subsection}{Testing/Feedback}{11}{}%
-\contentsline {subsection}{Deployment}{11}{}%
-\contentsline {section}{Project Management}{11}{}%
-\contentsline {subsection}{Proposed Project Timeline}{11}{}%
-\contentsline {section}{Budget}{12}{}%
-\contentsline {subsection}{Estimated Budget}{12}{}%
-\contentsline {section}{References}{13}{}%
+\contentsline {subsection}{Deployment}{12}{}%
+\contentsline {section}{Project Management}{12}{}%
+\contentsline {subsection}{Proposed Project Timeline}{12}{}%
+\contentsline {section}{Budget}{13}{}%
+\contentsline {subsection}{Estimated Budget}{13}{}%
+\contentsline {section}{References}{14}{}%
