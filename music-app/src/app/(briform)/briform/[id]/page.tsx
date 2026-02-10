@@ -1,7 +1,7 @@
 // src/app/briform/[id]/page.tsx
 import { createClient } from '@/app/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import ProjectWorkspace from './ProjectWorkspace'
+import ProjectWorkspace from '../../components/ProjectWorkspace'
 
 interface ProjectPageProps {
 	params: Promise<{ id: string }>
