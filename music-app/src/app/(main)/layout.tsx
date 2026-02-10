@@ -1,7 +1,7 @@
 // music-app/src/app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "../globals.css";
 import Navbar from "@/app/components/Navbar";
 
 const geistSans = Geist({
