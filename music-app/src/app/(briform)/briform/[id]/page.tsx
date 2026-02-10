@@ -42,7 +42,7 @@ export default async function ProjectEditorPage({ params }: ProjectPageProps) {
 			{/* We pass the project data down so the client knows what to render */}
 			<ProjectWorkspace
 				projectId={project.id}
-				initialVideoId={project.video_url || null} // Assuming you might have this column later
+				initialVideoId={project.video_id || null} // Assuming you might have this column later
 			/>
 		</div>
 	)

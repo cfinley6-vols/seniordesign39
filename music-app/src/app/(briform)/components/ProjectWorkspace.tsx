@@ -1,9 +1,10 @@
 // src/app/briform/[id]/ProjectWorkspace.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import YouTubeEmbed from "./YouTubeEmbed";
 import { PlaybackTimeline } from "./PlaybackTimeline";
+import { saveProject } from "@/app/(briform)/briform/actions"
 
 // Define the track type internally or import it
 type Track = {
@@ -24,6 +25,20 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
 		initialVideoId ? { id: initialVideoId, name: "Project Video", duration_ms: 0 } : null
 	);
 
+	const [isSaving, setIsSaving] = useState(false);
+
+	const handleSave = useCallback(async (videoId: string) => {
+		setIsSaving(true);
+		try {
+			await saveProject(projectId, { video_id: videoId });
+			console.log("Auto-saved video to Supabase");
+		} catch (error) {
+			console.error("Error saving project:", error);
+		} finally {
+			setIsSaving(false);
+		}
+	}, [projectId]);
+
 	const handleVideoLoaded = (videoId: string) => {
 		setTrack({
 			id: videoId,
@@ -31,12 +46,14 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
 			duration_ms: 0, // Player will auto-detect
 		});
 
-		// TODO: Ideally, you would trigger a Server Action here to save 
-		// this videoId to your Supabase 'bri_projects' table so it loads next time.
+		handleSave(videoId);
 	};
 
 	return (
 		<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-900" >
+			<div className="fixed bottom-4 right-4 text-xs text-gray-400">
+				{isSaving ? "Saving..." : "All changes saved"}
+			</div>
 
 			{!track ? (
 				// State 1: No Video -> Show Input
