@@ -44,11 +44,6 @@ export default async function BriformNavbar({ params }: ProjectPageProps) {
 				</span>
 			</div>
 			<AuthButton />
-			<div className="flex gap-2">
-				<button className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
-					Save
-				</button>
-			</div>
 		</nav>
 	);
 }
