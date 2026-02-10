@@ -1,7 +1,7 @@
 // music-app/src/app/components/BriCard.tsx
 "use client"
 import Link from "next/link"
-import { renameProject, deleteProject } from "@/app/dashboard/actions"
+import { renameProject, deleteProject } from "./actions"
 import { useState, useRef, useEffect, useTransition } from "react"
 
 interface ProjectCardProps {

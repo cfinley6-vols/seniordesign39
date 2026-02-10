@@ -1,7 +1,7 @@
 // music-app/src/app/components/AuthButton.tsx
 import { createClient } from "@/app/lib/supabase/server"
 import Link from "next/link"
-import { signout } from "@/app/login/actions"
+import { signout } from "@/app/(main)/login/actions"
 
 export default async function AuthButton() {
 	const supabase = await createClient()
