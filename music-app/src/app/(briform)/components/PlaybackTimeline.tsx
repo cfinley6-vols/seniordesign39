@@ -115,30 +115,31 @@ export function PlaybackTimeline({ selectedTrack }: PlaybackTimelineProps) {
 	};
 
 	return (
-        <div className="w-full max-w-4xl mx-auto mt-6">
-            {/* Hidden Player Container (Required by YouTube API) */}
-            <div className="mb-4 aspect-video bg-black rounded overflow-hidden">
-                 <div ref={playerContainerRef} />
-            </div>
+		<div className="w-full max-w-4xl mx-auto mt-6">
 
-            {/* Timeline Bar */}
-            <div ref={timelineRef} className="w-full h-8 bg-gray-700 relative rounded cursor-pointer mb-4" onClick={handleSeek}>
-                <div className="absolute top-0 bottom-0 bg-blue-500 transition-all duration-100" style={{ width: `${(currentTime / duration) * 100}%` }} />
-            </div>
+			{/* Timeline Bar */}
+			<div ref={timelineRef} className="w-full h-8 bg-gray-700 relative rounded cursor-pointer mb-4" onClick={handleSeek}>
+				<div className="absolute top-0 bottom-0 bg-blue-500 transition-all duration-100" style={{ width: `${(currentTime / duration) * 100}%` }} />
+			</div>
 
-            {/* Controls */}
-            <div className="flex justify-between items-center">
-                <button 
-                    onClick={togglePlay} 
-                    disabled={!isReady}
-                    className="px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-                >
-                    {isPlaying ? "Pause" : "Play"}
-                </button>
-                <span className="text-gray-300 font-mono">
-                    {Math.floor(currentTime)}s / {Math.floor(duration)}s
-                </span>
-            </div>
-        </div>
-    );
+			{/* Controls */}
+			<div className="flex justify-between items-center">
+				<button
+					onClick={togglePlay}
+					disabled={!isReady}
+					className="px-6 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+				>
+					{isPlaying ? "Pause" : "Play"}
+				</button>
+				<span className="text-gray-300 font-mono">
+					{Math.floor(currentTime)}s / {Math.floor(duration)}s
+				</span>
+			</div>
+
+			{/* Hidden Player Container (Required by YouTube API) */}
+			<div className="mb-4 aspect-video bg-black rounded overflow-hidden">
+				<div ref={playerContainerRef} />
+			</div>
+		</div>
+	);
 }

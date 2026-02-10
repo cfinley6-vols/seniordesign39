@@ -73,13 +73,13 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
 						</button>
 					</div>
 
-					{/* This is the component we built earlier */}
-					<PlaybackTimeline selectedTrack={track} />
-
 					{/* Add your Diagram Canvas or other tools below here */}
 					<div className="mt-8 p-12 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-400" >
 						[Diagram Canvas Area]
 					</div>
+
+					{/* This is the component we built earlier */}
+					<PlaybackTimeline selectedTrack={track} />
 				</div>
 			)}
 		</div>
