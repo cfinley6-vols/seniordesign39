@@ -34,7 +34,7 @@ export default async function BriformNavbar({ params }: ProjectPageProps) {
 	}
 
 	return (
-		<header className="border-b px-6 py-4 flex items-center justify-between bg-white dark:bg-gray-800">
+		<nav className="border-b px-6 py-4 flex sticky top-0 z-50 items-center justify-between bg-white dark:bg-gray-800">
 			<div>
 				<h1 className="text-xl font-bold text-gray-900 dark:text-white">
 					{project.title}
@@ -49,6 +49,6 @@ export default async function BriformNavbar({ params }: ProjectPageProps) {
 					Save
 				</button>
 			</div>
-		</header>
+		</nav>
 	);
 }
