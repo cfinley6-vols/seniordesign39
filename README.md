@@ -1,3 +1,4 @@
+# Team Name - MELT (Music Education and Listening Tool)
 # Roles
 
 ### Music People
