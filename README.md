@@ -22,3 +22,6 @@ npm install @supabase/supabase-js @supabase/ssr zod
 - Viktor Potter (vpotter2)
 - Jason West (ysy293)
 - Ryan Thweatt (rthweatt)
+
+# For Testing with Audio-To-Score Tool
+https://youtu.be/8fATAQtY9ag?si=lf4m0Q2KmVM5m6j6
