@@ -15,12 +15,12 @@
 \contentsline {subsection}{Development Process}{11}{}%
 \contentsline {subsection}{Iterations}{12}{}%
 \contentsline {section}{Social Impact Evaluation}{12}{}%
-\contentsline {section}{Deliverables and Milestones}{12}{}%
-\contentsline {subsection}{Development}{12}{}%
-\contentsline {subsection}{Testing/Feedback}{12}{}%
-\contentsline {subsection}{Deployment}{13}{}%
-\contentsline {section}{Project Management}{13}{}%
-\contentsline {subsection}{Proposed Project Timeline}{13}{}%
-\contentsline {section}{Budget}{14}{}%
-\contentsline {subsection}{Estimated Budget}{14}{}%
-\contentsline {section}{References}{15}{}%
+\contentsline {section}{Deliverables and Milestones}{13}{}%
+\contentsline {subsection}{Development}{13}{}%
+\contentsline {subsection}{Testing/Feedback}{13}{}%
+\contentsline {subsection}{Deployment}{14}{}%
+\contentsline {section}{Project Management}{14}{}%
+\contentsline {subsection}{Proposed Project Timeline}{14}{}%
+\contentsline {section}{Budget}{15}{}%
+\contentsline {subsection}{Estimated Budget}{15}{}%
+\contentsline {section}{References}{16}{}%
