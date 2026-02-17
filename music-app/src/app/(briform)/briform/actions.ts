@@ -9,11 +9,11 @@ export async function saveProject(projectId: string, payload: {
 }) {
     const supabase = await createClient()
 
-    // 1. Auth Check
+    // Auth Check
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    // 2. Prepare the update object
+    // Prepare the update object
     const updateData: any = {
         updated_at: new Date().toISOString(),
     }
@@ -23,7 +23,7 @@ export async function saveProject(projectId: string, payload: {
     if (payload.title !== undefined) updateData.title = payload.title
     if (payload.data !== undefined) updateData.data = payload.data
 
-    // 3. Update Supabase
+    // Update Supabase
     const { error } = await supabase
         .from('bri_projects')
         .update(updateData)
@@ -35,7 +35,7 @@ export async function saveProject(projectId: string, payload: {
         throw new Error('Failed to save project')
     }
 
-    // 4. Refresh data (optional, useful if you display "Last Edited" time)
+    // Refresh data (optional, useful if you display "Last Edited" time)
     revalidatePath(`/briform/${projectId}`)
     
     return { success: true }

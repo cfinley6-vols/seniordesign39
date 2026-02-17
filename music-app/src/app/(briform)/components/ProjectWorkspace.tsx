@@ -5,6 +5,7 @@ import { useState, useCallback } from "react";
 import YouTubeEmbed from "./YouTubeEmbed";
 import { PlaybackTimeline } from "./PlaybackTimeline";
 import { saveProject } from "@/app/(briform)/briform/actions"
+import BriformCanvas from "./BriformCanvas";
 
 // Define the track type internally or import it
 type Track = {
@@ -73,10 +74,8 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
 						</button>
 					</div>
 
-					{/* Add your Diagram Canvas or other tools below here */}
-					<div className="mt-8 p-12 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-400" >
-						[Diagram Canvas Area]
-					</div>
+					{/* Form Diagram */}
+					<BriformCanvas selectedTrack={track} />
 
 					{/* This is the component we built earlier */}
 					<PlaybackTimeline selectedTrack={track} />
