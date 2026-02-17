@@ -35,9 +35,6 @@ export default async function ProjectEditorPage({ params }: ProjectPageProps) {
 
 	return (
 		<div className="flex h-screen flex-col">
-			{/* Header (Server Rendered - SEO friendly and fast) */}
-			
-
 			{/* Client Workspace (Handles State, YouTube, Interactions) */}
 			{/* We pass the project data down so the client knows what to render */}
 			<ProjectWorkspace

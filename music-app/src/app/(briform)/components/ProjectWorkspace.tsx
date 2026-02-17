@@ -1,13 +1,12 @@
 // src/app/briform/[id]/ProjectWorkspace.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import YouTubeEmbed from "./YouTubeEmbed";
 import { PlaybackTimeline } from "./PlaybackTimeline";
 import { saveProject } from "@/app/(briform)/briform/actions"
-import BriformCanvas from "./BriformCanvas";
+import BriformCanvas, { Region } from "./BriformCanvas";
 
-// Define the track type internally or import it
 type Track = {
 	id: string;
 	name: string;
@@ -25,30 +24,43 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
 	const [track, setTrack] = useState<Track | null>(
 		initialVideoId ? { id: initialVideoId, name: "Project Video", duration_ms: 0 } : null
 	);
+	const [regions, setRegions] = useState<Region[]>([]);
+
+	// Player State
+	const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPlayerReady, setIsPlayerReady] = useState(false);
+
+	// We hold the ref here to pass to both children
+    const playerRef = useRef<any>(null);
 
 	const [isSaving, setIsSaving] = useState(false);
 
-	const handleSave = useCallback(async (videoId: string) => {
-		setIsSaving(true);
-		try {
-			await saveProject(projectId, { video_id: videoId });
-			console.log("Auto-saved video to Supabase");
-		} catch (error) {
-			console.error("Error saving project:", error);
-		} finally {
-			setIsSaving(false);
-		}
-	}, [projectId]);
+	const handleSaveVideo = useCallback(async (videoId: string) => {
+        setIsSaving(true);
+        try {
+            await saveProject(projectId, { video_id: videoId });
+        } catch (error) {
+            console.error("Error saving project:", error);
+        } finally {
+            setIsSaving(false);
+        }
+    }, [projectId]);
 
 	const handleVideoLoaded = (videoId: string) => {
-		setTrack({
-			id: videoId,
-			name: "Project Video",
-			duration_ms: 0, // Player will auto-detect
-		});
+        setTrack({ id: videoId, name: "Project Video", duration_ms: 0 });
+        handleSaveVideo(videoId);
+        // Reset state
+        setRegions([]);
+        setCurrentTime(0);
+    };
 
-		handleSave(videoId);
-	};
+	const togglePlay = () => {
+        if (!playerRef.current) return;
+        if (isPlaying) playerRef.current.pauseVideo();
+        else playerRef.current.playVideo();
+    };
 
 	return (
 		<div className="flex-1 flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-900" >
@@ -57,30 +69,48 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
 			</div>
 
 			{!track ? (
-				// State 1: No Video -> Show Input
-				<YouTubeEmbed onVideoLoaded={handleVideoLoaded} />
-			) : (
-				// State 2: Video Loaded -> Show Timeline
-				<div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500" >
+                <div className="flex items-center justify-center h-full w-full">
+                    <YouTubeEmbed onVideoLoaded={handleVideoLoaded} />
+                </div>
+            ) : (
+                <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex justify-between items-end mb-4">
+                        <h2 className="text-xl font-semibold">Workspace</h2>
+                        <button
+                            onClick={() => {
+                                if(confirm("Change video? Current regions will be lost.")) {
+                                    setTrack(null);
+                                }
+                            }}
+                            className="text-xs text-red-500 hover:underline"
+                        >
+                            Change Video
+                        </button>
+                    </div>
 
-					<div className="flex justify-between items-end mb-4" >
-						<h2 className="text-xl font-semibold" > Timeline </h2>
-						< button
-							onClick={() => setTrack(null)
-							}
-							className="text-xs text-red-500 hover:underline"
-						>
-							Change Video
-						</button>
-					</div>
+                    {/* The Canvas (Visuals + Controls) */}
+                    <BriformCanvas 
+                        regions={regions}
+                        setRegions={setRegions}
+                        currentTime={currentTime}
+                        duration={duration}
+                        isPlaying={isPlaying}
+                        isReady={isPlayerReady}
+                        playerRef={playerRef}
+                        togglePlay={togglePlay}
+                    />
 
-					{/* Form Diagram */}
-					<BriformCanvas selectedTrack={track} />
-
-					{/* This is the component we built earlier */}
-					<PlaybackTimeline selectedTrack={track} />
-				</div>
-			)}
-		</div>
+                    {/* The Engine (Video Player) */}
+                    <PlaybackTimeline 
+                        videoId={track.id}
+                        onDurationChange={setDuration}
+                        onTimeUpdate={setCurrentTime}
+                        onStateChange={setIsPlaying}
+                        onReady={() => setIsPlayerReady(true)}
+                        setPlayerRef={(ref) => (playerRef.current = ref.current)}
+                    />
+                </div>
+            )}
+        </div>
 	);
 }
