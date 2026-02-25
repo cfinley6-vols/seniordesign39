@@ -10,7 +10,7 @@ export default function HomePageButton() {
                 className="text-xl font-bold text-[#FF8200] hover:text-[#D67000] active:text-[#B65600] transition"
                 onClick={() => location.assign('/')}
             >
-                Music Education App
+                MELT
             </Link>
         </div>
     )

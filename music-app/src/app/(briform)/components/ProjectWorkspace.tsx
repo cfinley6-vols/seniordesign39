@@ -194,6 +194,8 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
                     {/* The Engine (Video Player) */}
                     <PlaybackTimeline 
                         videoId={track.id}
+						currentTime={currentTime}
+                        duration={duration}
                         onDurationChange={setDuration}
                         onTimeUpdate={setCurrentTime}
                         onStateChange={setIsPlaying}

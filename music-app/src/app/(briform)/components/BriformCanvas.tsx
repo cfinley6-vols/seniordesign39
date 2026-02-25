@@ -199,19 +199,18 @@ export default function BriformCanvas({
         isDraggingRef.current = false;
     };
 
-    const prettyTime = useMemo(() => {
-        const s = Math.floor(currentTime);
-        const m = Math.floor(s / 60);
-        const r = s % 60;
-        return `${m}:${String(r).padStart(2, "0")}`;
-    }, [currentTime]);
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m}:${String(s).padStart(2, "0")}`;
+    };
 
     return (
         <section className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg p-5 shadow-lg mb-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-3">
-                <div className="font-semibold text-lg">Timeline Canvas</div>
+                <div className="font-semibold text-lg">Form Diagram</div>
                 <div className="text-sm opacity-80 font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
-                    {prettyTime} / {duration ? Math.floor(duration) : 0}s
+                    {formatTime(currentTime)} / {formatTime(duration ? Math.floor(duration) : 0)}
                 </div>
             </div>
 
@@ -266,7 +265,7 @@ export default function BriformCanvas({
                                     e.stopPropagation();
                                     const label = prompt("Rename:", r.label);
                                     if (label) setRegions(prev => prev.map((x, idx) => idx === i ? {...x, label} : x));
-                                    // Optionally, you can trigger playerRef.current.playVideo() here if you want it to auto-resume after a rename
+                                    playerRef.current.playVideo()
                                 }}
                                 onContextMenu={(e) => { e.preventDefault(); setRegions(prev => prev.filter((_, idx) => idx !== i)); }}
                             >
