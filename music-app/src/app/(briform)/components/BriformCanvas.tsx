@@ -3,7 +3,6 @@
 
 import { useState, useRef, useMemo } from "react";
 
-// Export this type so ProjectWorkspace can use it
 export type Region = {
     start: number;
     end: number;
@@ -38,12 +37,13 @@ export default function BriformCanvas({
     togglePlay,
 }: BriformCanvasProps) {
     const [selectedRegionIds, setSelectedRegionIds] = useState<Set<number>>(new Set());
-    const [hoverTime, setHoverTime] = useState<number | null>(null);
     const [dragStart, setDragStart] = useState<number | null>(null);
-    const [isCreating, setIsCreating] = useState(false);
+	const [markStart, setMarkStart] = useState<number | null>(null);
     const [activeRegion, setActiveRegion] = useState<number | null>(null);
     const [dragMode, setDragMode] = useState<DragMode>("none");
 
+    // We use a ref here instead of state so we don't trigger unnecessary re-renders while dragging
+    const isDraggingRef = useRef(false);
     const timelineRef = useRef<HTMLDivElement>(null);
 
     // --- Utilities ---
@@ -73,7 +73,7 @@ export default function BriformCanvas({
     // --- Logic ---
     const handleMark = () => {
         if (!duration || duration <= 0) return;
-        const defaultLen = 8;
+        const defaultLen = 1;
         const start = clamp(currentTime, 0, duration);
         const end = clamp(start + defaultLen, 0, duration);
 
@@ -82,7 +82,9 @@ export default function BriformCanvas({
             alert("Overlap detected.");
             return;
         }
-        const label = prompt("Label for this section:", "New Section") || "New Section";
+        
+        // FIX: Auto-name without freezing the browser thread
+        const label = `Section ${regions.length + 1}`;
         setRegions((prev) => [...prev, { start, end, label }].sort((a, b) => a.start - b.start));
     };
 
@@ -109,7 +111,8 @@ export default function BriformCanvas({
         const end = Math.max(...selected.map((r) => r.end));
         const remaining = regions.filter((_, i) => !selectedRegionIds.has(i));
         if (remaining.some((r) => start < r.end && end > r.start)) { alert("Group overlaps existing region."); return; }
-        const label = prompt("Group label:", "Grouped Section") || "Grouped Section";
+        
+        const label = `Grouped Section`;
         setRegions([...remaining, { start, end, label }].sort((a, b) => a.start - b.start));
         setSelectedRegionIds(new Set());
     };
@@ -119,10 +122,21 @@ export default function BriformCanvas({
     };
 
     // --- Mouse Events ---
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        const t = timeFromMouse(e); 
+        if (t === null) return;
+        setDragStart(t); 
+        isDraggingRef.current = false;
+    };
+
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         const t = timeFromMouse(e);
         if (t === null) return;
-        setHoverTime(t);
+
+        // If mouse is actively held down, they are dragging
+        if (e.buttons === 1) {
+            isDraggingRef.current = true;
+        }
 
         if (dragMode !== "none" && activeRegion !== null) {
             setRegions((prev) => {
@@ -146,21 +160,28 @@ export default function BriformCanvas({
         }
     };
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        const t = timeFromMouse(e); if (t === null) return;
-        setDragStart(t); setIsCreating(true);
-    };
-
     const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
         const t = timeFromMouse(e);
-        if (t !== null && isCreating && dragStart !== null) {
-            const start = Math.min(dragStart, t); const end = Math.max(dragStart, t);
+        if (t !== null && dragStart !== null) {
+            const start = Math.min(dragStart, t); 
+            const end = Math.max(dragStart, t);
+            
+            // If they dragged an area, create a bubble
             if (Math.abs(end - start) > 0.25 && !isOverlapping(start, end)) {
-                const label = prompt("Enter region label", "New Section") || "New Section";
+                // FIX: Auto-name on drag
+                const label = `Section ${regions.length + 1}`;
                 setRegions((prev) => [...prev, { start, end, label }].sort((a, b) => a.start - b.start));
+            } 
+            // If they just clicked without dragging, seek the playhead
+            else if (!isDraggingRef.current) {
+                seekTo(t);
             }
         }
-        setIsCreating(false); setDragMode("none"); setActiveRegion(null); setDragStart(null);
+        
+        setDragMode("none"); 
+        setActiveRegion(null); 
+        setDragStart(null);
+        isDraggingRef.current = false;
     };
 
     const prettyTime = useMemo(() => {
@@ -170,13 +191,8 @@ export default function BriformCanvas({
         return `${m}:${String(r).padStart(2, "0")}`;
     }, [currentTime]);
 
-    // --- RENDER ---
     return (
-        // REMOVED 'animate-in' and 'fade-in' which often cause invisibility if config is missing
-        // ADDED 'border' to debug visibility
         <section className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg p-5 shadow-lg mb-6 border border-gray-200 dark:border-gray-700">
-            
-            {/* Header */}
             <div className="flex items-center justify-between mb-3">
                 <div className="font-semibold text-lg">Timeline Canvas</div>
                 <div className="text-sm opacity-80 font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
@@ -184,7 +200,6 @@ export default function BriformCanvas({
                 </div>
             </div>
 
-            {/* Timeline Bar - ADDED explicit z-index and overflow-visible for debugging */}
             <div className="relative w-full h-16 bg-gray-100 dark:bg-gray-900 rounded-lg p-1">
                 <div
                     ref={timelineRef}
@@ -192,18 +207,13 @@ export default function BriformCanvas({
                     onMouseMove={handleMouseMove}
                     onMouseDown={handleMouseDown}
                     onMouseUp={handleMouseUp}
-                    onClick={(e) => {
-                        const t = timeFromMouse(e);
-                        if (t !== null && !isCreating) seekTo(t);
-                    }}
+                    // Removed the conflicting onClick handler here!
                 >
-                    {/* Playhead */}
                     <div
                         className="absolute top-0 bottom-0 z-30 w-1 bg-red-500 shadow-sm pointer-events-none transition-all duration-75 ease-linear"
                         style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                     />
 
-                    {/* Regions */}
                     {regions.map((r, i) => {
                         const selected = selectedRegionIds.has(i);
                         return (
@@ -231,12 +241,12 @@ export default function BriformCanvas({
                                     e.stopPropagation();
                                     const label = prompt("Rename:", r.label);
                                     if (label) setRegions(prev => prev.map((x, idx) => idx === i ? {...x, label} : x));
+                                    // Optionally, you can trigger playerRef.current.playVideo() here if you want it to auto-resume after a rename
                                 }}
                                 onContextMenu={(e) => { e.preventDefault(); setRegions(prev => prev.filter((_, idx) => idx !== i)); }}
                             >
                                 <span className="text-xs font-bold truncate pointer-events-none drop-shadow-md">{r.label}</span>
                                 
-                                {/* Resize Handles */}
                                 <div className="absolute left-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-w-resize" 
                                      onMouseDown={(e) => { e.stopPropagation(); setActiveRegion(i); setDragMode("resize-start"); }} />
                                 <div className="absolute right-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-e-resize" 
@@ -247,13 +257,10 @@ export default function BriformCanvas({
                 </div>
             </div>
 
-            {/* Helper Text */}
             <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 h-5">
-                <span>{hoverTime !== null ? `Hover: ${Math.round(hoverTime * 10) / 10}s` : ""}</span>
                 <span>Drag to create • Double-click to rename</span>
             </div>
 
-            {/* Controls */}
             <div className="mt-4 flex flex-wrap gap-2 items-center justify-center border-t dark:border-gray-700 pt-4">
                 <button onClick={() => skip(-5)} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">-5s</button>
                 <button onClick={togglePlay} className="px-6 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold w-24">

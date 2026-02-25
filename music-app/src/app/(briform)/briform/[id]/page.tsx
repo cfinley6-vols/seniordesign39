@@ -24,7 +24,8 @@ export default async function ProjectEditorPage({ params }: ProjectPageProps) {
 		.from('bri_projects')
 		.select('*')
 		.eq('id', id)
-		.single()
+		.eq('user_id', user.id) // Security: Ensure they own it
+		.single() // Expect exactly one project
 
 	// Handle errors (Project doesn't exist OR User doesn't own it)
 	// Because of our RLS policies, if the user doesn't own it, 
