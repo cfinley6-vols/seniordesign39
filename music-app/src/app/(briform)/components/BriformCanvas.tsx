@@ -71,21 +71,36 @@ export default function BriformCanvas({
     const skip = (deltaSeconds: number) => seekTo(currentTime + deltaSeconds);
 
     // --- Logic ---
-    const handleMark = () => {
+    const handleDynamicMark = () => {
         if (!duration || duration <= 0) return;
-        const defaultLen = 1;
-        const start = clamp(currentTime, 0, duration);
-        const end = clamp(start + defaultLen, 0, duration);
 
-        if (end - start < 0.25) return;
-        if (isOverlapping(start, end)) {
-            alert("Overlap detected.");
-            return;
+        if (markStart === null) {
+            // FIRST CLICK: Start the bubble
+            setMarkStart(currentTime);
+        } else {
+            // SECOND CLICK: Finish the bubble
+            const start = Math.min(markStart, currentTime);
+            const end = Math.max(markStart, currentTime);
+
+            if (end - start < 0.25) {
+                alert("Bubble is too short.");
+                setMarkStart(null);
+                return;
+            }
+
+            if (isOverlapping(start, end)) {
+                alert("This bubble overlaps with an existing one!");
+                setMarkStart(null);
+                return;
+            }
+            
+            // Auto-name and save
+            const label = `Section ${regions.length + 1}`;
+            setRegions((prev) => [...prev, { start, end, label }].sort((a, b) => a.start - b.start));
+            
+            // Reset so we can create another one
+            setMarkStart(null); 
         }
-        
-        // FIX: Auto-name without freezing the browser thread
-        const label = `Section ${regions.length + 1}`;
-        setRegions((prev) => [...prev, { start, end, label }].sort((a, b) => a.start - b.start));
     };
 
     const handleSplit = () => {
@@ -207,12 +222,22 @@ export default function BriformCanvas({
                     onMouseMove={handleMouseMove}
                     onMouseDown={handleMouseDown}
                     onMouseUp={handleMouseUp}
-                    // Removed the conflicting onClick handler here!
-                >
+                >	
+				
                     <div
                         className="absolute top-0 bottom-0 z-30 w-1 bg-red-500 shadow-sm pointer-events-none transition-all duration-75 ease-linear"
                         style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                     />
+					{/* Ghost Bubble that grows while marking */}
+                    {markStart !== null && (
+                        <div
+                            className="absolute top-2 bottom-2 rounded-md border border-red-500 bg-red-500/40 z-10 pointer-events-none animate-pulse"
+                            style={{
+                                left: `${duration ? (markStart / duration) * 100 : 0}%`,
+                                width: `${duration && currentTime > markStart ? ((currentTime - markStart) / duration) * 100 : 0}%`,
+                            }}
+                        />
+                    )}
 
                     {regions.map((r, i) => {
                         const selected = selectedRegionIds.has(i);
@@ -269,7 +294,16 @@ export default function BriformCanvas({
                 <button onClick={() => skip(5)} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">+5s</button>
                 <div className="w-px h-6 bg-gray-300 mx-2"></div>
                 <button onClick={handleSplit} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">Split</button>
-                <button onClick={handleMark} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">Mark</button>
+                <button 
+                    onClick={handleDynamicMark} 
+                    className={`px-4 py-1 rounded font-semibold transition-colors w-32 ${
+                        markStart !== null 
+                            ? "bg-red-500 text-white hover:bg-red-600 shadow-inner" 
+                            : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-black dark:text-white"
+                    }`}
+                >
+                    {markStart !== null ? "End Bubble" : "Start Bubble"}
+                </button>
                 <button onClick={handleGroup} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">Group</button>
                 <button onClick={handleClear} className="px-3 py-1 text-red-500 hover:bg-red-50 rounded ml-2">Clear</button>
             </div>
