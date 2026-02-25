@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import YouTubeEmbed from "./YouTubeEmbed";
+import YouTubeEmbedWithSearch from "./YouTubeEmbedWithSearch";
 import { PlaybackTimeline } from "./PlaybackTimeline";
 import { saveProject } from "@/app/(briform)/briform/actions"
 import BriformCanvas, { Region } from "./BriformCanvas";
@@ -70,7 +70,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
 
 			{!track ? (
                 <div className="flex items-center justify-center h-full w-full">
-                    <YouTubeEmbed onVideoLoaded={handleVideoLoaded} />
+                    <YouTubeEmbedWithSearch onVideoLoaded={handleVideoLoaded} />
                 </div>
             ) : (
                 <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
