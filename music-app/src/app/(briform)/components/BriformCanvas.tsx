@@ -1,12 +1,13 @@
 // src/app/briform/[id]/BriformCanvas.tsx
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef } from "react";
 
 export type Region = {
     start: number;
     end: number;
     label: string;
+    layer?: number;
 };
 
 type DragMode = "none" | "move" | "resize-start" | "resize-end";
@@ -38,19 +39,19 @@ export default function BriformCanvas({
 }: BriformCanvasProps) {
     const [selectedRegionIds, setSelectedRegionIds] = useState<Set<number>>(new Set());
     const [dragStart, setDragStart] = useState<number | null>(null);
-	const [markStart, setMarkStart] = useState<number | null>(null);
+    const [markStart, setMarkStart] = useState<number | null>(null);
     const [activeRegion, setActiveRegion] = useState<number | null>(null);
     const [dragMode, setDragMode] = useState<DragMode>("none");
 
-    // We use a ref here instead of state so we don't trigger unnecessary re-renders while dragging
     const isDraggingRef = useRef(false);
     const timelineRef = useRef<HTMLDivElement>(null);
 
     // --- Utilities ---
-    const isOverlapping = (start: number, end: number, excludeIndex: number | null = null) =>
+    // NEW: We now check overlapping only on the specific layer!
+    const isOverlapping = (start: number, end: number, excludeIndex: number | null = null, layer: number = 0) =>
         regions.some((r, i) => {
             if (excludeIndex !== null && i === excludeIndex) return false;
-            return start < r.end && end > r.start;
+            return (r.layer || 0) === layer && start < r.end && end > r.start;
         });
 
     const timeFromMouse = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -75,60 +76,62 @@ export default function BriformCanvas({
         if (!duration || duration <= 0) return;
 
         if (markStart === null) {
-            // FIRST CLICK: Start the bubble
             setMarkStart(currentTime);
         } else {
-            // SECOND CLICK: Finish the bubble
             const start = Math.min(markStart, currentTime);
             const end = Math.max(markStart, currentTime);
 
-            if (end - start < 0.25) {
-                alert("Bubble is too short.");
-                setMarkStart(null);
-                return;
-            }
-
-            if (isOverlapping(start, end)) {
-                alert("This bubble overlaps with an existing one!");
-                setMarkStart(null);
-                return;
-            }
+            if (end - start < 0.25) { alert("Bubble is too short."); setMarkStart(null); return; }
+            if (isOverlapping(start, end, null, 0)) { alert("This overlaps with an existing base bubble!"); setMarkStart(null); return; }
             
-            // Auto-name and save
             const label = `Section ${regions.length + 1}`;
-            setRegions((prev) => [...prev, { start, end, label }].sort((a, b) => a.start - b.start));
-            
-            // Reset so we can create another one
+            setRegions((prev) => [...prev, { start, end, label, layer: 0 }]);
             setMarkStart(null); 
         }
     };
 
     const handleSplit = () => {
         const t = currentTime;
+        // Find the region we are currently inside. Note: If multiple layers overlap this time, 
+        // we'll default to the lowest one (base track) unless we make this selection-based later.
         const idx = regions.findIndex((r) => t > r.start && t < r.end);
         if (idx === -1) { alert("Playhead must be inside a bubble to split"); return; }
+        
         const r = regions[idx];
         if (t - r.start < 0.25 || r.end - t < 0.25) { alert("Split point too close to edge."); return; }
 
         setRegions((prev) => {
             const updated = [...prev];
-            updated.splice(idx, 1, { start: r.start, end: t, label: r.label }, { start: t, end: r.end, label: r.label });
-            return updated.sort((a, b) => a.start - b.start);
+            // Split it, maintaining whatever layer it was on
+            updated.splice(idx, 1, 
+                { start: r.start, end: t, label: r.label, layer: r.layer || 0 }, 
+                { start: t, end: r.end, label: r.label, layer: r.layer || 0 }
+            );
+            return updated;
         });
         setSelectedRegionIds(new Set());
     };
 
     const handleGroup = () => {
-        const ids = Array.from(selectedRegionIds.values()).sort((a, b) => a - b);
+        const ids = Array.from(selectedRegionIds.values());
         if (ids.length < 2) { alert("Select at least 2 regions to group."); return; }
+        
         const selected = ids.map((i) => regions[i]);
         const start = Math.min(...selected.map((r) => r.start));
         const end = Math.max(...selected.map((r) => r.end));
-        const remaining = regions.filter((_, i) => !selectedRegionIds.has(i));
-        if (remaining.some((r) => start < r.end && end > r.start)) { alert("Group overlaps existing region."); return; }
+
+        // Figure out the highest layer currently among our selection
+        const maxSelectedLayer = Math.max(...selected.map((r) => r.layer || 0));
+        let targetLayer = maxSelectedLayer + 1;
+        
+        // Ensure the new overarching bubble doesn't crash into an existing one on that target tier
+        while (regions.some(r => (r.layer || 0) === targetLayer && start < r.end && end > r.start)) {
+            targetLayer++;
+        }
         
         const label = `Grouped Section`;
-        setRegions([...remaining, { start, end, label }].sort((a, b) => a.start - b.start));
+        // Notice we are NO LONGER deleting the selected items! We just append the parent on top.
+        setRegions(prev => [...prev, { start, end, label, layer: targetLayer }]);
         setSelectedRegionIds(new Set());
     };
 
@@ -147,30 +150,28 @@ export default function BriformCanvas({
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         const t = timeFromMouse(e);
         if (t === null) return;
-
-        // If mouse is actively held down, they are dragging
-        if (e.buttons === 1) {
-            isDraggingRef.current = true;
-        }
+        if (e.buttons === 1) isDraggingRef.current = true;
 
         if (dragMode !== "none" && activeRegion !== null) {
             setRegions((prev) => {
                 const updated = [...prev];
                 const region = { ...updated[activeRegion] };
+                const currentLayer = region.layer || 0;
+
                 if (dragMode === "move") {
                     const width = region.end - region.start;
                     const newStart = t - width / 2;
                     const newEnd = newStart + width;
-                    if (newStart >= 0 && newEnd <= duration && !isOverlapping(newStart, newEnd, activeRegion)) {
+                    if (newStart >= 0 && newEnd <= duration && !isOverlapping(newStart, newEnd, activeRegion, currentLayer)) {
                         region.start = newStart; region.end = newEnd;
                     }
                 } else if (dragMode === "resize-start") {
-                    if (t >= 0 && t < region.end && !isOverlapping(t, region.end, activeRegion)) region.start = t;
+                    if (t >= 0 && t < region.end && !isOverlapping(t, region.end, activeRegion, currentLayer)) region.start = t;
                 } else if (dragMode === "resize-end") {
-                    if (t <= duration && t > region.start && !isOverlapping(region.start, t, activeRegion)) region.end = t;
+                    if (t <= duration && t > region.start && !isOverlapping(region.start, t, activeRegion, currentLayer)) region.end = t;
                 }
                 updated[activeRegion] = region;
-                return updated.sort((a, b) => a.start - b.start);
+                return updated;
             });
         }
     };
@@ -181,22 +182,15 @@ export default function BriformCanvas({
             const start = Math.min(dragStart, t); 
             const end = Math.max(dragStart, t);
             
-            // If they dragged an area, create a bubble
-            if (Math.abs(end - start) > 0.25 && !isOverlapping(start, end)) {
-                // FIX: Auto-name on drag
+            if (Math.abs(end - start) > 0.25 && !isOverlapping(start, end, null, 0)) {
                 const label = `Section ${regions.length + 1}`;
-                setRegions((prev) => [...prev, { start, end, label }].sort((a, b) => a.start - b.start));
+                setRegions((prev) => [...prev, { start, end, label, layer: 0 }]);
             } 
-            // If they just clicked without dragging, seek the playhead
             else if (!isDraggingRef.current) {
                 seekTo(t);
             }
         }
-        
-        setDragMode("none"); 
-        setActiveRegion(null); 
-        setDragStart(null);
-        isDraggingRef.current = false;
+        setDragMode("none"); setActiveRegion(null); setDragStart(null); isDraggingRef.current = false;
     };
 
     const formatTime = (seconds: number) => {
@@ -204,6 +198,11 @@ export default function BriformCanvas({
         const s = Math.floor(seconds % 60);
         return `${m}:${String(s).padStart(2, "0")}`;
     };
+
+    // Calculate maximum layer to scale the height of the container dynamically
+    const maxLayer = regions.length > 0 ? Math.max(...regions.map(r => r.layer || 0)) : 0;
+    // Base padding + (Number of layers * 48px per layer)
+    const containerHeightPx = 16 + ((maxLayer + 1) * 48);
 
     return (
         <section className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg p-5 shadow-lg mb-6 border border-gray-200 dark:border-gray-700">
@@ -214,24 +213,30 @@ export default function BriformCanvas({
                 </div>
             </div>
 
-            <div className="relative w-full h-16 bg-gray-100 dark:bg-gray-900 rounded-lg p-1">
+            {/* Dynamic Container Height based on active tiers */}
+            <div 
+                className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-1 transition-all duration-300"
+                style={{ height: `${containerHeightPx}px` }}
+            >
                 <div
                     ref={timelineRef}
-                    className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer overflow-hidden shadow-inner"
+                    className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer shadow-inner overflow-hidden"
                     onMouseMove={handleMouseMove}
                     onMouseDown={handleMouseDown}
                     onMouseUp={handleMouseUp}
-                >	
-				
+                >   
+                    {/* The Playhead Marker spans the whole height */}
                     <div
                         className="absolute top-0 bottom-0 z-30 w-1 bg-red-500 shadow-sm pointer-events-none transition-all duration-75 ease-linear"
                         style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                     />
-					{/* Ghost Bubble that grows while marking */}
+                    
+                    {/* Ghost Bubble (Always on Layer 0 at the bottom) */}
                     {markStart !== null && (
                         <div
-                            className="absolute top-2 bottom-2 rounded-md border border-red-500 bg-red-500/40 z-10 pointer-events-none animate-pulse"
+                            className="absolute rounded-md border border-red-500 bg-red-500/40 z-10 pointer-events-none animate-pulse"
                             style={{
+                                bottom: `8px`, height: `40px`, // Anchored to base layer
                                 left: `${duration ? (markStart / duration) * 100 : 0}%`,
                                 width: `${duration && currentTime > markStart ? ((currentTime - markStart) / duration) * 100 : 0}%`,
                             }}
@@ -240,15 +245,19 @@ export default function BriformCanvas({
 
                     {regions.map((r, i) => {
                         const selected = selectedRegionIds.has(i);
+                        const layer = r.layer || 0;
+                        
                         return (
                             <div
                                 key={i}
-                                className={`absolute top-2 bottom-2 rounded-md border px-2 flex items-center justify-center z-20 select-none ${
+                                className={`absolute rounded-md border px-2 flex items-center justify-center z-20 select-none ${
                                     selected
                                         ? "bg-blue-600 text-white border-blue-300 shadow-md"
                                         : "bg-blue-500/90 text-white border-blue-400/50 shadow-sm hover:bg-blue-500"
                                 }`}
                                 style={{
+                                    bottom: `${layer * 48 + 8}px`, // Stacks upwards based on layer tier
+                                    height: `40px`,
                                     left: `${duration ? (r.start / duration) * 100 : 0}%`,
                                     width: `${duration ? ((r.end - r.start) / duration) * 100 : 0}%`,
                                 }}
@@ -265,7 +274,7 @@ export default function BriformCanvas({
                                     e.stopPropagation();
                                     const label = prompt("Rename:", r.label);
                                     if (label) setRegions(prev => prev.map((x, idx) => idx === i ? {...x, label} : x));
-                                    playerRef.current.playVideo()
+                                    playerRef.current?.playVideo();
                                 }}
                                 onContextMenu={(e) => { e.preventDefault(); setRegions(prev => prev.filter((_, idx) => idx !== i)); }}
                             >
