@@ -56,6 +56,25 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
         setCurrentTime(0);
     };
 
+	const handleChangeVideo = async () => {
+        if (confirm("Change video? Current regions will be lost.")) {
+            // 1. Instantly clear the UI (Optimistic update for a snappy feel)
+            setTrack(null);
+            setRegions([]);
+            
+            // 2. Tell Supabase to wipe the video ID and reset the saved regions
+            setIsSaving(true);
+            try {
+                await saveProject(projectId, { video_id: null, data: [] });
+            } catch (error) {
+                console.error("Error clearing video in database:", error);
+                alert("Failed to clear the video from the server. Please try again.");
+            } finally {
+                setIsSaving(false);
+            }
+        }
+    };
+
 	const togglePlay = () => {
         if (!playerRef.current) return;
         
@@ -90,7 +109,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isPlaying]);
 	
-    // ===== 1. LOAD REGIONS =====
+    // ===== LOAD REGIONS =====
     useEffect(() => {
         if (!track) return;
         
@@ -141,7 +160,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
         return () => { isMounted = false; };
     }, [track, projectId]);
 
-    // ===== 2. AUTO-SAVE REGIONS =====
+    // ===== AUTO-SAVE REGIONS =====
     useEffect(() => {
         // Prevent saving if there is no track, OR if we haven't finished the initial load yet
         if (!track || !isLoadedRef.current) return; 
@@ -182,11 +201,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
                     <div className="flex justify-between items-end mb-4">
                         <h2 className="text-xl font-semibold">Workspace</h2>
                         <button
-                            onClick={() => {
-                                if(confirm("Change video? Current regions will be lost.")) {
-                                    setTrack(null);
-                                }
-                            }}
+                            onClick={handleChangeVideo}
                             className="text-xs text-red-500 hover:underline"
                         >
                             Change Video
