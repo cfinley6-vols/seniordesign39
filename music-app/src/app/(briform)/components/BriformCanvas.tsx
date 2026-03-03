@@ -28,7 +28,7 @@ function clamp(n: number, min: number, max: number) {
 }
 
 export default function BriformCanvas({
-    regions,
+    regions = [],
     setRegions,
     currentTime,
     duration,
@@ -47,7 +47,6 @@ export default function BriformCanvas({
     const timelineRef = useRef<HTMLDivElement>(null);
 
     // --- Utilities ---
-    // NEW: We now check overlapping only on the specific layer!
     const isOverlapping = (start: number, end: number, excludeIndex: number | null = null, layer: number = 0) =>
         regions.some((r, i) => {
             if (excludeIndex !== null && i === excludeIndex) return false;
@@ -243,7 +242,7 @@ export default function BriformCanvas({
                         />
                     )}
 
-                    {regions.map((r, i) => {
+                    {regions?.map((r, i) => {
                         const selected = selectedRegionIds.has(i);
                         const layer = r.layer || 0;
                         

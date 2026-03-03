@@ -97,33 +97,47 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
         let isMounted = true;
         const loadRegions = async () => {
             try {
-                // Note: Make sure this URL points to an API route returning JSON, not the page HTML!
                 const response = await fetch(`/api/briform/${projectId}`);
-                const data = await response.json();
+                const responseData = await response.json();
                 
                 if (isMounted) {
-                    if (data && data.regions) {
-                        setRegions(data.regions);
+                    // 1. Check both 'regions' and 'data' keys based on your save logic
+                    let incomingData = responseData?.regions || responseData?.data;
+
+                    // 2. If the database returned a stringified JSON array, parse it!
+                    if (typeof incomingData === "string") {
+                        try {
+                            incomingData = JSON.parse(incomingData);
+                        } catch (e) {
+                            console.warn("Failed to parse regions string from DB", e);
+                            incomingData = [];
+                        }
+                    }
+
+                    // 3. Absolute final check: is it TRULY an array now?
+                    if (Array.isArray(incomingData)) {
+                        setRegions(incomingData);
+                    } else {
+                        console.warn("API returned non-array for regions, falling back to []");
+                        setRegions([]); 
                     }
                     
-                    // Crucial step: Wait a tiny tick for React to process the setRegions update,
-                    // then flip the flag to allow auto-saving.
                     setTimeout(() => {
                         if (isMounted) isLoadedRef.current = true;
                     }, 50);
                 }
             } catch (error) {
                 console.error("Error loading regions:", error);
-                // Even if it fails, allow saving moving forward so new work isn't lost
-                if (isMounted) isLoadedRef.current = true; 
+                if (isMounted) {
+                    setRegions([]); // Safety fallback on network error
+                    isLoadedRef.current = true;
+                }
             }
         };
 
-        // Reset the flag whenever the track changes (like loading a new video)
         isLoadedRef.current = false; 
         loadRegions();
 
-        // Cleanup function to prevent state updates if the component unmounts
         return () => { isMounted = false; };
     }, [track, projectId]);
 
