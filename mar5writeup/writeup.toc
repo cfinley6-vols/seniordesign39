@@ -1,0 +1,27 @@
+\contentsline {section}{Problem Definition and Background}{1}{}%
+\contentsline {section}{The Requirement Specification}{3}{}%
+\contentsline {section}{Technical Approach}{4}{}%
+\contentsline {subsection}{Project Space}{4}{}%
+\contentsline {subsection}{Functional Decomposition}{5}{}%
+\contentsline {subsection}{Key Design Decisions}{6}{}%
+\contentsline {section}{Design Concepts, Evaluation, and Selection}{7}{}%
+\contentsline {subsection}{Web Application vs. Downloadable Application - Davis Akard}{7}{}%
+\contentsline {subsection}{Offsite Login vs. Backend Provider - Ryan Thweatt}{8}{}%
+\contentsline {subsection}{Auto-Grading \& Manual Grading vs. Strictly Manual Grading - Viktor Potter}{8}{}%
+\contentsline {subsection}{Spotify Integration vs. YouTube Integration - Connor Finley}{9}{}%
+\contentsline {subsection}{Briform-Inspired Design vs. Design-From-Scratch - Jason West}{9}{}%
+\contentsline {subsection}{YouTube API (iFrame) vs. YouTube Linking - Davis Akard}{10}{}%
+\contentsline {section}{Product Development \& Test/Evaluation Plan}{10}{}%
+\contentsline {subsection}{Prototyping}{10}{}%
+\contentsline {subsection}{Development Process}{11}{}%
+\contentsline {subsection}{Iterations}{12}{}%
+\contentsline {section}{Social Impact Evaluation}{12}{}%
+\contentsline {section}{Deliverables and Milestones}{13}{}%
+\contentsline {subsection}{Development}{13}{}%
+\contentsline {subsection}{Testing/Feedback}{14}{}%
+\contentsline {subsection}{Deployment}{14}{}%
+\contentsline {section}{Project Management}{14}{}%
+\contentsline {subsection}{Proposed Project Timeline}{14}{}%
+\contentsline {section}{Budget}{15}{}%
+\contentsline {subsection}{Estimated Budget}{15}{}%
+\contentsline {section}{References}{16}{}%
