@@ -1,10 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.30)  11 FEB 2026 19:33
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025) (preloaded format=pdflatex 2025.11.30)  4 MAR 2026 19:32
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**c:/Users/Owner/Documents/GitHub/seniordesign39/feb12writeup/writeup.tex
-(c:/Users/Owner/Documents/GitHub/seniordesign39/feb12writeup/writeup.tex
+**c:/Users/Owner/Documents/GitHub/seniordesign39/mar5writeup/writeup.tex
+(c:/Users/Owner/Documents/GitHub/seniordesign39/mar5writeup/writeup.tex
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-11-14>
 (c:/texlive/2025/texmf-dist/tex/latex/base/article.cls
@@ -133,16 +133,12 @@ File: images/401Technical.drawio.png Graphic file (type png)
 <use images/401Technical.drawio.png>
 Package pdftex.def Info: images/401Technical.drawio.png  used on input line 94.
 (pdftex.def)             Requested size: 195.0pt x 261.42645pt.
- [4] [5 <./images/401Technical.drawio.png>] [6] [7] [8] [9] [10] [11] [12] [13]
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-[14]
+ [4] [5 <./images/401Technical.drawio.png>] [6] [7] [8] [9] [10] [11] [12] [13] [14] [15]
 Overfull \hbox (165.50285pt too wide) in paragraph at lines 277--279
 \OT1/cmtt/m/n/12 https://viva.pressbooks.pub/app/uploads/sites/12/2019/08/WK-AABA-and-strophic-forms.pdf 
  []
 
-[15]
+
 Underfull \hbox (badness 10000) in paragraph at lines 281--283
 []\OT1/cmr/m/n/12 ``Open Mu-sic The-ory,'' VIVA Press-books. [On-line]. Avail-able:
  []
@@ -177,7 +173,7 @@ Overfull \hbox (184.02786pt too wide) in paragraph at lines 301--303
 \OT1/cmtt/m/n/12 https://www.earmaster.com/products/ear-training-sight-singing/earmaster-cloud-edition.html 
  []
 
-[16] (./writeup.aux)
+[16] [17] (./writeup.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2025-11-14>
@@ -185,17 +181,17 @@ L3 programming layer <2025-11-14>
  ) 
 Here is how much of TeX's memory you used:
  1657 strings out of 469475
- 26004 string characters out of 5469239
+ 26001 string characters out of 5469239
  443733 words of memory out of 5000000
  30328 multiletter control sequences out of 15000+600000
  633097 words of font info for 58 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 57i,11n,65p,2242b,269s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 57i,11n,65p,2241b,269s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb><c:/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on writeup.pdf (20 pages, 133787 bytes).
+Output written on writeup.pdf (21 pages, 134212 bytes).
 PDF statistics:
- 97 PDF objects out of 1000 (max. 8388607)
- 62 compressed objects within 1 object stream
+ 100 PDF objects out of 1000 (max. 8388607)
+ 64 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  6 words of extra memory for PDF output out of 10000 (max. 10000000)
 

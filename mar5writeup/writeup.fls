@@ -1,8 +1,8 @@
-PWD c:/Users/Owner/Documents/GitHub/seniordesign39/feb12writeup
+PWD c:/Users/Owner/Documents/GitHub/seniordesign39/mar5writeup
 INPUT c:/texlive/2025/texmf.cnf
 INPUT c:/texlive/2025/texmf-dist/web2c/texmf.cnf
 INPUT c:/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT c:/Users/Owner/Documents/GitHub/seniordesign39/feb12writeup/writeup.tex
+INPUT c:/Users/Owner/Documents/GitHub/seniordesign39/mar5writeup/writeup.tex
 OUTPUT writeup.log
 INPUT c:/texlive/2025/texmf-dist/tex/latex/base/article.cls
 INPUT c:/texlive/2025/texmf-dist/tex/latex/base/article.cls
