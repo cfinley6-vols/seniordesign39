@@ -1,4 +1,4 @@
-// music-app/src/app/components/BriCard.tsx
+// music-app/src/app/components/ProjectCard.tsx
 "use client"
 import Link from "next/link"
 import { renameProject, deleteProject } from "./actions"
@@ -10,7 +10,7 @@ interface ProjectCardProps {
 	updatedAt: string
 }
 
-export default function BriCard({ id, title, updatedAt }: ProjectCardProps) {
+export default function ProjectCard({ id, title, updatedAt }: ProjectCardProps) {
 	const [isPending, startTransition] = useTransition()
 	const [isClient, setIsClient] = useState(false)
 

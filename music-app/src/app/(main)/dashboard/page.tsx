@@ -1,7 +1,7 @@
 // music-app/src/app/dashboard/page.tsx
 import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import BriCard from './BriCard'
+import ProjectCard from './ProjectCard'
 import CreateButton from './CreateButton'
 
 export default async function DashboardPage() {
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
 				{/* 2. Map over the real data */}
 				{/* The 'projects' array might be null if the fetch fails, so we add || [] */}
 				{(projects || []).map((project) => (
-					<BriCard
+					<ProjectCard
 						key={project.id}
 						id={project.id}
 						title={project.title}
