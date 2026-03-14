@@ -27,9 +27,6 @@ export default async function ProjectEditorPage({ params }: ProjectPageProps) {
 		.eq('user_id', user.id) // Security: Ensure they own it
 		.single() // Expect exactly one project
 
-	// Handle errors (Project doesn't exist OR User doesn't own it)
-	// Because of our RLS policies, if the user doesn't own it, 
-	// Supabase returns null/error, effectively hiding it.
 	if (error || !project) {
 		return notFound() // Shows the Next.js 404 UI
 	}
