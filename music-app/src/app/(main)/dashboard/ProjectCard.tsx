@@ -8,9 +8,10 @@ interface ProjectCardProps {
 	id: string
 	title: string
 	updatedAt: string
+	projectType: "briform" | "soundtoscore"
 }
 
-export default function ProjectCard({ id, title, updatedAt }: ProjectCardProps) {
+export default function ProjectCard({ id, title, updatedAt, projectType }: ProjectCardProps) {
 	const [isPending, startTransition] = useTransition()
 	const [isClient, setIsClient] = useState(false)
 
@@ -48,7 +49,7 @@ export default function ProjectCard({ id, title, updatedAt }: ProjectCardProps) 
 		}
 
 		startTransition(async () => {
-			await renameProject(id, currentTitle)
+			await renameProject(id, currentTitle, projectType)
 		})
 	}
 
@@ -74,7 +75,7 @@ export default function ProjectCard({ id, title, updatedAt }: ProjectCardProps) 
 
 	const handleDeleteConfirm = () => {
 		startTransition(async () => {
-			await deleteProject(id)
+			await deleteProject(id, projectType)
 			setShowDeleteModal(false)
 		})
 	}
@@ -90,15 +91,15 @@ export default function ProjectCard({ id, title, updatedAt }: ProjectCardProps) 
 						<span className="text-4xl text-gray-300">♫</span>
 					</div>
 				) : (
-					<Link href={`/briform/${id}`} className="h-40 bg-gray-100 flex items-center justify-center hover:bg-gray-50 hover:scale-105 transition block">
-						<span className="text-4xl text-gray-300">♫</span>
+					<Link href={projectType === "briform" ? `/briform/${id}` : `/soundtoscore/${id}`} className={projectType === "briform" ? "h-40 bg-blue-400 flex items-center justify-center hover:bg-blue-600 transition block" : "h-40 bg-green-400 flex items-center justify-center hover:bg-green-600 transition block"}>
+						<span className="text-4xl text-gray-200">♫</span>
 					</Link>
 				)}
 
 				{/* 2. Metadata Area */}
 				<div className="p-4 border-t border-gray-200 relative">
 
-					{/* INLINE RENAME INPUT vs TITLE DISPLAY */}
+					{/* INLINE RENAME INPUT */}
 					{isRenaming ? (
 						<input
 							ref={inputRef}

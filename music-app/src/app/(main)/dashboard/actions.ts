@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 export async function createProject(formData?: FormData) {
     const supabase = await createClient()
     const title = formData?.get('title') as string || 'Untitled Project'
+	const projectType = formData?.get('projectType') as string
 
     // 1. Get the current user
     const { data: { user } } = await supabase.auth.getUser()
@@ -17,46 +18,64 @@ export async function createProject(formData?: FormData) {
 
     // 2. Insert the new project
     // We use .select() and .single() to immediately get back the ID of the row we just made
-    const { data, error } = await supabase
-        .from('bri_projects')
-        .insert({
-            user_id: user.id,
-            title: title,
-            data: {}, // Start with an empty diagram
-        })
-        .select()
-        .single()
-
-    if (error) {
-        // In a real app, you might return this error to the UI
-        throw new Error(error.message)
-    }
-
-    revalidatePath('/dashboard') // Revalidate the dashboard to show the new project
-
-    // 3. Redirect the user to the new project workspace
-    redirect(`/briform/${data.id}`)
+	if (projectType === 'briform') {
+	    const { data, error } = await supabase
+	        .from('bri_projects')
+	        .insert({
+	            user_id: user.id,
+	            title: title,
+	            data: {}, // Start with an empty diagram
+	        })
+	        .select()
+	        .single()
+		if (error) {
+	        // In a real app, you might return this error to the UI
+	        throw new Error(error.message)
+	    }
+		revalidatePath('/dashboard')
+    	redirect(`/briform/${data.id}`)
+	}
+	else if (projectType === 'soundtoscore') {
+		const { data, error } = await supabase
+	        .from('sound_to_score_projects')
+	        .insert({
+	            user_id: user.id,
+	            title: title,
+	            data: {}, // Start with empty data
+	        })
+	        .select()
+	        .single()
+		if (error) {
+	        // In a real app, you might return this error to the UI
+	        throw new Error(error.message)
+	    }
+		revalidatePath('/dashboard')
+    	redirect(`/soundtoscore/${data.id}`)
+	}
 }
 
-export async function deleteProject(projectId: string) {
+export async function deleteProject(projectId: string, projectType: "briform" | "soundtoscore") {
     const supabase = await createClient()
 
-    // RLS policies ensure you can only delete your own
-    const { error } = await supabase
-        .from('bri_projects')
-        .delete()
-        .eq('id', projectId)
+	if (!projectId) {
+		throw new Error("Project ID is required for deletion")
+	}
 
-    if (error) throw new Error(error.message)
+	const { error } = await supabase
+		.from(projectType === "briform" ? 'bri_projects' : 'sound_to_score_projects')
+		.delete()
+		.eq('id', projectId)
 
-    revalidatePath('/dashboard')
+	if (error) throw new Error(error.message)
+
+	revalidatePath('/dashboard')
 }
 
-export async function renameProject(projectId: string, newTitle: string) {
+export async function renameProject(projectId: string, newTitle: string, projectType: "briform" | "soundtoscore") {
     const supabase = await createClient()
 
     const { error } = await supabase
-        .from('bri_projects')
+        .from(projectType === "briform" ? 'bri_projects' : 'sound_to_score_projects')
         .update({ title: newTitle, updated_at: new Date().toISOString() })
         .eq('id', projectId)
 

@@ -1,7 +1,6 @@
 // music-app/src/app/components/Navbar.tsx
 import AuthButton from "@/app/components/AuthButton";
 import HomePageButton from "@/app/components/HomePageButton";
-import DashboardButton from "./AdminButton";
 
 export default function Navbar() {
 	return (
@@ -9,7 +8,6 @@ export default function Navbar() {
 			<div className="max-w-7xl mx-auto px-2 py-4 flex items-center justify-between">
 				<HomePageButton />
 				<div className="flex items-center space-x-3">
-					<DashboardButton />
 					<AuthButton />
 				</div>
 			</div>

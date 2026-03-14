@@ -27,10 +27,17 @@ export default async function DashboardPage() {
 
 	// 1. Fetch real projects from Supabase
 	// We order by 'updated_at' so the most recent ones appear first
-	const { data: projects } = await supabase
+	const { data: briProjects } = await supabase
 		.from('bri_projects')
 		.select('id, title, updated_at')
 		.order('updated_at', { ascending: false })
+	
+	const { data: soundToScoreProjects } = await supabase
+		.from('sound_to_score_projects')
+		.select('id, title, updated_at')
+		.order('updated_at', { ascending: false })
+
+	const projects = [...(briProjects || []), ...(soundToScoreProjects || [])].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
 	return (
 		<div className="p-8 max-w-7xl mx-auto">
@@ -54,6 +61,7 @@ export default async function DashboardPage() {
 						id={project.id}
 						title={project.title}
 						updatedAt={project.updated_at}
+						projectType={briProjects?.some(p => p.id === project.id) ? "briform" : "soundtoscore"}
 					/>
 				))}
 			</div>
