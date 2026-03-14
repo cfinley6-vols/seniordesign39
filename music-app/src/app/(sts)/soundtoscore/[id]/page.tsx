@@ -1,4 +1,4 @@
-// // music-app/src/app/(main)/soundtoscore/[id]/page.tsx
+// music-app/src/app/(main)/soundtoscore/[id]/page.tsx
 import { createClient } from "@/app/lib/supabase/server"
 import { notFound, redirect } from "next/navigation"
 

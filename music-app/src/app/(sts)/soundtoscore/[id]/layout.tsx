@@ -1,4 +1,4 @@
-// music-app/src/app/layout.tsx
+// music-app/src/app/(sts)/soundtoscore/[id]/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
