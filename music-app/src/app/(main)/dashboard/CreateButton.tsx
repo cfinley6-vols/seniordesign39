@@ -7,9 +7,13 @@ import { createProject } from "./actions" // Import the action we just made
 export default function CreateButton() {
     const [isPending, startTransition] = useTransition()
     const [showCreateModal, setShowCreateModal] = useState(false)
+	const [showProjectTypeModal, setShowProjectTypeModal] = useState(false)
     const [newTitle, setNewTitle] = useState("")
     // For focusing on the input when the modal opens
     const inputRef = useRef<HTMLInputElement>(null)
+
+	// Need additional question of whether or not user is creating sound to score project or briform project
+	const [projectType, setProjectType] = useState<"briform" | "soundtoscore" | null>(null)
 
 	// Navigation hook initialization
 	const searchParams = useSearchParams()
@@ -32,10 +36,24 @@ export default function CreateButton() {
         }
     }, [showCreateModal])
 
+	useEffect(() => {
+        if (showProjectTypeModal && inputRef.current) {
+            inputRef.current.focus()
+            inputRef.current.select()
+        }
+    }, [showProjectTypeModal])
+
     const handleOpenModal = () => {
         setNewTitle("New Project")
-        setShowCreateModal(true)
+        setShowProjectTypeModal(true)
     }
+
+	// Prompt the user to choose project type when they click "Create New Project"
+	const handleProjectTypeSelect = (type: "briform" | "soundtoscore") => {
+		setProjectType(type)
+		setShowProjectTypeModal(false)
+		setShowCreateModal(true)
+	}
 
     const handleSubmit = async () => {
         if (!newTitle.trim()) return
@@ -43,9 +61,10 @@ export default function CreateButton() {
         setShowCreateModal(false)
 
         startTransition(async () => {
-            // Create FormData to send the title
+            // Create FormData to send the title and project type to the server action
             const formData = new FormData()
             formData.append('title', newTitle)
+            formData.append('projectType', projectType as string)
             await createProject(formData)
         })
     }
@@ -80,8 +99,38 @@ export default function CreateButton() {
                 )}
             </button>
 
-            {/* 2. The Custom "Create" Modal */}
-            {showCreateModal && (
+			{/* 2. Display user prompt for project type selection */}
+			{showProjectTypeModal && (
+				<div 
+					className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+					onClick={() => setShowProjectTypeModal(false)}
+				>
+					<div
+						className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6 animate-in fade-in zoom-in duration-200"
+						onClick={(e) => e.stopPropagation()}
+					>
+						<h3 className="text-lg font-bold text-gray-900 mb-4">Select Project Type</h3>
+
+						<div className="flex flex-col gap-4">
+							<button
+								onClick={() => handleProjectTypeSelect("briform")}
+								className="w-full px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md font-medium"
+							>
+								Briform Diagram
+							</button>
+							<button
+								onClick={() => handleProjectTypeSelect("soundtoscore")}
+								className="w-full px-4 py-2 bg-green-500 text-white hover:bg-green-700 rounded-md font-medium"
+							>
+								Sound to Score
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+            {/* 3. The Custom "Create" Modal */}
+            {showCreateModal && projectType && (
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
                     onClick={() => setShowCreateModal(false)}
