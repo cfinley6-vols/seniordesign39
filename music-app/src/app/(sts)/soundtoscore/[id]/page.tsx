@@ -1,6 +1,7 @@
 // music-app/src/app/(main)/soundtoscore/[id]/page.tsx
 import { createClient } from "@/app/lib/supabase/server"
 import { notFound, redirect } from "next/navigation"
+import SoundToScore from "@/app/(sts)/components/STS"
 
 interface ProjectPageProps {
 	params: Promise<{ id: string }>
@@ -31,6 +32,7 @@ export default async function SoundToScoreProjectPage({ params }: ProjectPagePro
 			<p className="text-gray-600 mb-4">{project.description}</p>
 			{/* You can add more project details here */}
 			{/* For example, a link to the audio file or the generated score */}
+			<SoundToScore />
 		</div>
 	);
 }
