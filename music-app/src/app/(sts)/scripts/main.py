@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import yt_dlp
 from basic_pitch.inference import predict_and_save
+import traceback
 
 app = FastAPI()
 
@@ -41,7 +42,7 @@ def download_audio(url: str, output_dir: str) -> str:
 @app.post("/api/convert")
 def convert_to_midi(request: YouTubeRequest):
     try:
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = "./audio"
         
         # 1. Download
         wav_path = download_audio(request.url, temp_dir)
@@ -60,7 +61,7 @@ def convert_to_midi(request: YouTubeRequest):
         generated_midi = os.path.join(temp_dir, 'audio_basic_pitch.mid')
         
         if not os.path.exists(generated_midi):
-            raise HTTPException(status_code=500, detail="MIDI generation failed.")
+            raise Exception("MIDI generation failed.")
             
         return FileResponse(
             path=generated_midi, 
@@ -69,6 +70,11 @@ def convert_to_midi(request: YouTubeRequest):
         )
         
     except Exception as e:
+        # 👇 2. Add these print statements
+        print("\n" + "="*50)
+        print("🚨 PYTHON CRASH LOG 🚨")
+        traceback.print_exc() 
+        print("="*50 + "\n")
         raise HTTPException(status_code=500, detail=str(e))
     
 # uvicorn main:app --reload

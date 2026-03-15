@@ -28,10 +28,6 @@ export default async function SoundToScoreProjectPage({ params }: ProjectPagePro
 
 	return (
 		<div className="p-6">
-			<h2 className="text-2xl font-bold mb-4">{project.title}</h2>
-			<p className="text-gray-600 mb-4">{project.description}</p>
-			{/* You can add more project details here */}
-			{/* For example, a link to the audio file or the generated score */}
 			<SoundToScore />
 		</div>
 	);
