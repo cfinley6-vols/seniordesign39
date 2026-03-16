@@ -64,6 +64,72 @@ const syncRegions = (regions: Region[]): Region[] => {
     return syncParents(deOrphaned);
 };
 
+/**
+ * When resizing a bubble's edge, push/shrink the immediate neighbor on the
+ * same layer so they stay flush. The neighbor cannot shrink below MIN_WIDTH.
+ */
+const MIN_WIDTH = 0.25;
+
+function applyResizeWithNeighbor(
+    regions: Region[],
+    activeId: string,
+    dragMode: "resize-start" | "resize-end",
+    t: number,
+    duration: number
+): Region[] {
+    const idx = regions.findIndex((r) => r.id === activeId);
+    if (idx === -1) return regions;
+
+    const updated = regions.map((r) => ({ ...r }));
+    const region = updated[idx];
+    const layer = region.layer || 0;
+
+    // Only bubbles on the same layer
+    const layerBubbles = updated
+        .map((r, i) => ({ r, i }))
+        .filter(({ r }) => (r.layer || 0) === layer);
+
+    if (dragMode === "resize-end") {
+        // Clamp t so the active bubble keeps MIN_WIDTH
+        const newEnd = clamp(t, region.start + MIN_WIDTH, duration);
+
+        // Find the bubble immediately to the right on this layer
+        const rightNeighbor = layerBubbles
+            .filter(({ r }) => r.id !== activeId && r.start >= region.end - MIN_WIDTH)
+            .sort((a, b) => a.r.start - b.r.start)[0];
+
+        if (rightNeighbor) {
+            const neighbor = updated[rightNeighbor.i];
+            // Don't let neighbor shrink below MIN_WIDTH
+            const maxEnd = neighbor.end - MIN_WIDTH;
+            const clampedEnd = Math.min(newEnd, maxEnd);
+            updated[idx].end = clampedEnd;
+            neighbor.start = clampedEnd;
+        } else {
+            updated[idx].end = newEnd;
+        }
+    } else {
+        // resize-start
+        const newStart = clamp(t, 0, region.end - MIN_WIDTH);
+
+        const leftNeighbor = layerBubbles
+            .filter(({ r }) => r.id !== activeId && r.end <= region.start + MIN_WIDTH)
+            .sort((a, b) => b.r.end - a.r.end)[0];
+
+        if (leftNeighbor) {
+            const neighbor = updated[leftNeighbor.i];
+            const minStart = neighbor.start + MIN_WIDTH;
+            const clampedStart = Math.max(newStart, minStart);
+            updated[idx].start = clampedStart;
+            neighbor.end = clampedStart;
+        } else {
+            updated[idx].start = newStart;
+        }
+    }
+
+    return syncRegions(updated);
+}
+
 const MAX_HISTORY = 50;
 
 export default function BriformCanvas({
@@ -82,17 +148,25 @@ export default function BriformCanvas({
     const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
     const [dragMode, setDragMode] = useState<DragMode>("none");
 
+    // Undo history — only mutated by discrete actions, never by dragging
     const historyRef = useRef<Region[][]>([]);
     const isDraggingRef = useRef(false);
     const timelineRef = useRef<HTMLDivElement>(null);
-    const dragSnapshotRef = useRef<Region[] | null>(null);
+    const seededRef = useRef(false);
 
     // --- Seed initial full-timeline bubble once duration is known ---
-    const seededRef = useRef(false);
     useEffect(() => {
         if (duration > 0 && regions.length === 0 && !seededRef.current) {
             seededRef.current = true;
-            setRegions([{ id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 }]);
+            setRegions([
+                {
+                    id: crypto.randomUUID(),
+                    start: 0,
+                    end: duration,
+                    label: "Section 1",
+                    layer: 0,
+                },
+            ]);
         }
     }, [duration, regions.length, setRegions]);
 
@@ -105,6 +179,11 @@ export default function BriformCanvas({
         ];
     }, []);
 
+    /**
+     * Use this for all discrete user actions (create, split, delete, group,
+     * rename, clear). It snapshots BEFORE the change so undo restores to
+     * the state just before that action.
+     */
     const setRegionsWithHistory = useCallback(
         (current: Region[], updater: (prev: Region[]) => Region[]) => {
             pushHistory(current);
@@ -150,7 +229,7 @@ export default function BriformCanvas({
 
     const skip = (deltaSeconds: number) => seekTo(currentTime + deltaSeconds);
 
-    // --- Actions ---
+    // --- Discrete Actions (all go through setRegionsWithHistory) ---
 
     const handleDynamicMark = () => {
         if (!duration || duration <= 0) return;
@@ -159,7 +238,7 @@ export default function BriformCanvas({
         } else {
             const start = Math.min(markStart, currentTime);
             const end = Math.max(markStart, currentTime);
-            if (end - start < 0.25) { alert("Bubble is too short."); setMarkStart(null); return; }
+            if (end - start < MIN_WIDTH) { alert("Bubble is too short."); setMarkStart(null); return; }
             if (isOverlapping(start, end, null, 0)) { alert("This overlaps with an existing base bubble!"); setMarkStart(null); return; }
             const label = `Section ${regions.filter((r) => !r.layer).length + 1}`;
             setRegionsWithHistory(regions, (prev) =>
@@ -173,8 +252,10 @@ export default function BriformCanvas({
         const t = currentTime;
         const target = regions.find((r) => t > r.start && t < r.end);
         if (!target) { alert("Playhead must be inside a bubble to split."); return; }
-        if (t - target.start < 0.25 || target.end - t < 0.25) { alert("Split point too close to edge."); return; }
-
+        if (t - target.start < MIN_WIDTH || target.end - t < MIN_WIDTH) {
+            alert("Split point too close to edge.");
+            return;
+        }
         setRegionsWithHistory(regions, (prev) =>
             syncRegions(
                 prev.flatMap((r) =>
@@ -196,25 +277,16 @@ export default function BriformCanvas({
 
         const selected = regions.filter((r) => ids.includes(r.id));
 
-        // All selected regions must be on the same layer
         const layers = new Set(selected.map((r) => r.layer || 0));
-        if (layers.size > 1) {
-            alert("All selected regions must be on the same layer to group.");
-            return;
-        }
+        if (layers.size > 1) { alert("All selected regions must be on the same layer to group."); return; }
 
-        // None of the selected regions can already have a parent
         const alreadyGrouped = selected.some((r) => r.parentId !== undefined);
-        if (alreadyGrouped) {
-            alert("One or more selected bubbles are already part of a group. A bubble can only belong to one group.");
-            return;
-        }
+        if (alreadyGrouped) { alert("One or more selected bubbles are already part of a group."); return; }
 
         const start = Math.min(...selected.map((r) => r.start));
         const end = Math.max(...selected.map((r) => r.end));
 
         let targetLayer = Math.max(...selected.map((r) => r.layer || 0)) + 1;
-
         while (
             regions.some(
                 (r) =>
@@ -228,13 +300,7 @@ export default function BriformCanvas({
         }
 
         const parentId = crypto.randomUUID();
-        const parent: Region = {
-            id: parentId,
-            start,
-            end,
-            label: "Grouped Section",
-            layer: targetLayer,
-        };
+        const parent: Region = { id: parentId, start, end, label: "Grouped Section", layer: targetLayer };
 
         setRegionsWithHistory(regions, (prev) =>
             syncRegions([
@@ -263,8 +329,9 @@ export default function BriformCanvas({
     const handleClear = () => {
         if (confirm("Clear all regions?")) {
             pushHistory(regions);
-            // Reset to a single full-timeline bubble
-            setRegions([{ id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 }]);
+            setRegions([
+                { id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 },
+            ]);
             setSelectedRegionIds(new Set());
         }
     };
@@ -284,85 +351,71 @@ export default function BriformCanvas({
         if (e.buttons === 1) isDraggingRef.current = true;
 
         if (dragMode !== "none" && activeRegionId !== null) {
-            setRegions((prev) => {
-                const activeIndex = prev.findIndex((r) => r.id === activeRegionId);
-                if (activeIndex === -1) return prev;
+            if (dragMode === "resize-start" || dragMode === "resize-end") {
+                // Neighbor-aware resize — no history, just live update
+                setRegions((prev) =>
+                    applyResizeWithNeighbor(prev, activeRegionId, dragMode, t, duration)
+                );
+            } else if (dragMode === "move") {
+                // Move is blocked when neighbors are present (bubbles are flush)
+                // — movement only works when there's open space on the layer.
+                setRegions((prev) => {
+                    const activeIndex = prev.findIndex((r) => r.id === activeRegionId);
+                    if (activeIndex === -1) return prev;
 
-                const updated = [...prev];
-                const region = { ...updated[activeIndex] };
-                const currentLayer = region.layer || 0;
-
-                if (dragMode === "move") {
+                    const updated = prev.map((r) => ({ ...r }));
+                    const region = updated[activeIndex];
+                    const currentLayer = region.layer || 0;
                     const width = region.end - region.start;
                     const newStart = clamp(t - width / 2, 0, duration - width);
                     const newEnd = newStart + width;
-                    if (!isOverlapping(newStart, newEnd, region.id, currentLayer)) {
+
+                    if (!prev.some(
+                        (r) =>
+                            r.id !== activeRegionId &&
+                            (r.layer || 0) === currentLayer &&
+                            newStart < r.end &&
+                            newEnd > r.start
+                    )) {
                         const delta = newStart - region.start;
                         region.start = newStart;
                         region.end = newEnd;
-                        updated[activeIndex] = region;
-
                         return syncRegions(
                             updated.map((r) =>
-                                r.parentId === region.id
+                                r.parentId === activeRegionId
                                     ? { ...r, start: r.start + delta, end: r.end + delta }
                                     : r
                             )
                         );
                     }
-                } else if (dragMode === "resize-start") {
-                    if (
-                        t >= 0 &&
-                        t < region.end - 0.25 &&
-                        !isOverlapping(t, region.end, region.id, currentLayer)
-                    ) {
-                        region.start = t;
-                    }
-                } else if (dragMode === "resize-end") {
-                    if (
-                        t <= duration &&
-                        t > region.start + 0.25 &&
-                        !isOverlapping(region.start, t, region.id, currentLayer)
-                    ) {
-                        region.end = t;
-                    }
-                }
-
-                updated[activeIndex] = region;
-                return syncRegions(updated);
-            });
-        }
-    };
-
-    const startDrag = (id: string, mode: DragMode) => {
-        dragSnapshotRef.current = regions.map((r) => ({ ...r }));
-        setActiveRegionId(id);
-        setDragMode(mode);
-    };
-
-    const commitDragToHistory = () => {
-        if (dragSnapshotRef.current) {
-            historyRef.current = [
-                ...historyRef.current.slice(-MAX_HISTORY + 1),
-                dragSnapshotRef.current,
-            ];
-            dragSnapshotRef.current = null;
+                    return prev;
+                });
+            }
         }
     };
 
     const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
         const t = timeFromMouse(e);
 
-        if (t !== null && dragStart !== null) {
+        if (t !== null && dragStart !== null && !isDraggingRef.current) {
+            // Pure click — seek
+            seekTo(t);
+        }
+
+        // Drag on empty space to create a new bubble
+        if (
+            t !== null &&
+            dragStart !== null &&
+            isDraggingRef.current &&
+            dragMode === "none"
+        ) {
             const start = Math.min(dragStart, t);
             const end = Math.max(dragStart, t);
-            if (Math.abs(end - start) > 0.25 && !isOverlapping(start, end, null, 0)) {
+            if (Math.abs(end - start) > MIN_WIDTH && !isOverlapping(start, end, null, 0)) {
                 const label = `Section ${regions.filter((r) => !r.layer).length + 1}`;
                 setRegionsWithHistory(regions, (prev) =>
                     syncRegions([...prev, { id: crypto.randomUUID(), start, end, label, layer: 0 }])
                 );
-            } else if (!isDraggingRef.current) {
-                seekTo(t);
             }
         }
 
@@ -370,6 +423,11 @@ export default function BriformCanvas({
         setActiveRegionId(null);
         setDragStart(null);
         isDraggingRef.current = false;
+    };
+
+    const startDrag = (id: string, mode: DragMode) => {
+        setActiveRegionId(id);
+        setDragMode(mode);
     };
 
     // --- Formatting ---
@@ -387,12 +445,8 @@ export default function BriformCanvas({
     const selectedRegions = regions.filter((r) => selectedRegionIds.has(r.id));
     const selectedLayers = new Set(selectedRegions.map((r) => r.layer || 0));
     const alreadyGrouped = selectedRegions.some((r) => r.parentId !== undefined);
-    const canGroup =
-        selectedRegions.length >= 2 &&
-        selectedLayers.size === 1 &&
-        !alreadyGrouped;
+    const canGroup = selectedRegions.length >= 2 && selectedLayers.size === 1 && !alreadyGrouped;
 
-    // Hint message shown below the timeline
     let groupHint: string | null = null;
     if (selectedRegions.length >= 2 && !canGroup) {
         if (selectedLayers.size > 1) groupHint = "Can only group bubbles on the same layer";
@@ -417,10 +471,7 @@ export default function BriformCanvas({
                     className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer shadow-inner overflow-hidden"
                     onMouseMove={handleMouseMove}
                     onMouseDown={handleMouseDown}
-                    onMouseUp={(e) => {
-                        commitDragToHistory();
-                        handleMouseUp(e);
-                    }}
+                    onMouseUp={handleMouseUp}
                 >
                     {/* Playhead */}
                     <div
@@ -466,9 +517,7 @@ export default function BriformCanvas({
                                     bottom: `${layer * 48 + 8}px`,
                                     height: `40px`,
                                     left: `${duration ? (r.start / duration) * 100 : 0}%`,
-                                    width: `${
-                                        duration ? ((r.end - r.start) / duration) * 100 : 0
-                                    }%`,
+                                    width: `${duration ? ((r.end - r.start) / duration) * 100 : 0}%`,
                                 }}
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -487,11 +536,8 @@ export default function BriformCanvas({
                                     e.stopPropagation();
                                     const label = prompt("Rename:", r.label);
                                     if (label) {
-                                        pushHistory(regions);
-                                        setRegions((prev) =>
-                                            prev.map((x) =>
-                                                x.id === r.id ? { ...x, label } : x
-                                            )
+                                        setRegionsWithHistory(regions, (prev) =>
+                                            prev.map((x) => (x.id === r.id ? { ...x, label } : x))
                                         );
                                     }
                                     playerRef.current?.playVideo();
@@ -526,7 +572,7 @@ export default function BriformCanvas({
             </div>
 
             <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 h-5">
-                <span>Drag to create • Double-click to rename • Right-click to delete</span>
+                <span>Split or drag edges to resize • Double-click to rename • Right-click to delete</span>
                 {groupHint && (
                     <span className="text-amber-500 dark:text-amber-400">{groupHint}</span>
                 )}
