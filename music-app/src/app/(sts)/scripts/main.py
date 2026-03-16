@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import yt_dlp
 from basic_pitch.inference import predict_and_save
+from basic_pitch import ICASSP_2022_MODEL_PATH
 import traceback
 
 app = FastAPI()
@@ -13,7 +14,7 @@ app = FastAPI()
 # Allow Next.js to talk to this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Your Next.js URL
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,22 +40,24 @@ def download_audio(url: str, output_dir: str) -> str:
 
 # Note: Using 'def' instead of 'async def' so FastAPI runs this in a threadpool, 
 # preventing the heavy ML task from blocking the server.
+# Currently does not function as designed
 @app.post("/api/convert")
 def convert_to_midi(request: YouTubeRequest):
     try:
         temp_dir = "./audio"
         
-        # 1. Download
+        # Download
         wav_path = download_audio(request.url, temp_dir)
         
-        # 2. Transcribe
+        # Transcribe
         predict_and_save(
             audio_path_list=[wav_path],
             output_directory=temp_dir,
             save_midi=True,
             sonify_midi=False,
             save_model_outputs=False,
-            save_notes=False
+            save_notes=False,
+            model_or_model_path=ICASSP_2022_MODEL_PATH
         )
         
         # Basic pitch names the output like this:
@@ -70,9 +73,8 @@ def convert_to_midi(request: YouTubeRequest):
         )
         
     except Exception as e:
-        # 👇 2. Add these print statements
         print("\n" + "="*50)
-        print("🚨 PYTHON CRASH LOG 🚨")
+        print("PYTHON CRASH LOG")
         traceback.print_exc() 
         print("="*50 + "\n")
         raise HTTPException(status_code=500, detail=str(e))
