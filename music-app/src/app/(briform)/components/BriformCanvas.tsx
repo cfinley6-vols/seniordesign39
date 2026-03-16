@@ -1,13 +1,15 @@
 // src/app/briform/[id]/BriformCanvas.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 export type Region = {
+    id: string;
     start: number;
     end: number;
     label: string;
     layer?: number;
+    parentId?: string;
 };
 
 type DragMode = "none" | "move" | "resize-start" | "resize-end";
@@ -27,6 +29,43 @@ function clamp(n: number, min: number, max: number) {
     return Math.max(min, Math.min(max, n));
 }
 
+// --- Sync Helpers ---
+
+const syncParents = (regions: Region[]): Region[] => {
+    const sorted = [...regions].sort((a, b) => (a.layer || 0) - (b.layer || 0));
+    const map = new Map(sorted.map((r) => [r.id, { ...r }]));
+
+    for (const r of sorted) {
+        const children = [...map.values()].filter((c) => c.parentId === r.id);
+        if (children.length === 0) continue;
+        const updated = map.get(r.id)!;
+        updated.start = Math.min(...children.map((c) => c.start));
+        updated.end = Math.max(...children.map((c) => c.end));
+        map.set(r.id, updated);
+    }
+
+    return [...map.values()];
+};
+
+const cleanOrphanedParents = (regions: Region[]): Region[] => {
+    return regions.filter((r) => {
+        const childCount = regions.filter((c) => c.parentId === r.id).length;
+        const isParent = regions.some((c) => c.parentId === r.id);
+        return !isParent || childCount >= 2;
+    });
+};
+
+const syncRegions = (regions: Region[]): Region[] => {
+    const cleaned = cleanOrphanedParents(regions);
+    const validIds = new Set(cleaned.map((r) => r.id));
+    const deOrphaned = cleaned.map((r) =>
+        r.parentId && !validIds.has(r.parentId) ? { ...r, parentId: undefined } : r
+    );
+    return syncParents(deOrphaned);
+};
+
+const MAX_HISTORY = 50;
+
 export default function BriformCanvas({
     regions = [],
     setRegions,
@@ -37,19 +76,61 @@ export default function BriformCanvas({
     playerRef,
     togglePlay,
 }: BriformCanvasProps) {
-    const [selectedRegionIds, setSelectedRegionIds] = useState<Set<number>>(new Set());
+    const [selectedRegionIds, setSelectedRegionIds] = useState<Set<string>>(new Set());
     const [dragStart, setDragStart] = useState<number | null>(null);
     const [markStart, setMarkStart] = useState<number | null>(null);
-    const [activeRegion, setActiveRegion] = useState<number | null>(null);
+    const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
     const [dragMode, setDragMode] = useState<DragMode>("none");
 
+    const historyRef = useRef<Region[][]>([]);
     const isDraggingRef = useRef(false);
     const timelineRef = useRef<HTMLDivElement>(null);
+    const dragSnapshotRef = useRef<Region[] | null>(null);
+
+    // --- Seed initial full-timeline bubble once duration is known ---
+    const seededRef = useRef(false);
+    useEffect(() => {
+        if (duration > 0 && regions.length === 0 && !seededRef.current) {
+            seededRef.current = true;
+            setRegions([{ id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 }]);
+        }
+    }, [duration, regions.length, setRegions]);
+
+    // --- History Helpers ---
+
+    const pushHistory = useCallback((current: Region[]) => {
+        historyRef.current = [
+            ...historyRef.current.slice(-MAX_HISTORY + 1),
+            current.map((r) => ({ ...r })),
+        ];
+    }, []);
+
+    const setRegionsWithHistory = useCallback(
+        (current: Region[], updater: (prev: Region[]) => Region[]) => {
+            pushHistory(current);
+            setRegions((prev) => updater(prev));
+        },
+        [pushHistory, setRegions]
+    );
+
+    const handleUndo = useCallback(() => {
+        if (historyRef.current.length === 0) return;
+        const prev = historyRef.current[historyRef.current.length - 1];
+        historyRef.current = historyRef.current.slice(0, -1);
+        setRegions(prev);
+        setSelectedRegionIds(new Set());
+    }, [setRegions]);
 
     // --- Utilities ---
-    const isOverlapping = (start: number, end: number, excludeIndex: number | null = null, layer: number = 0) =>
-        regions.some((r, i) => {
-            if (excludeIndex !== null && i === excludeIndex) return false;
+
+    const isOverlapping = (
+        start: number,
+        end: number,
+        excludeId: string | null = null,
+        layer: number = 0
+    ) =>
+        regions.some((r) => {
+            if (excludeId !== null && r.id === excludeId) return false;
             return (r.layer || 0) === layer && start < r.end && end > r.start;
         });
 
@@ -63,86 +144,137 @@ export default function BriformCanvas({
 
     const seekTo = (seconds: number) => {
         if (playerRef?.current && typeof playerRef.current.seekTo === "function") {
-            const t = clamp(seconds, 0, duration || seconds);
-            playerRef.current.seekTo(t, true);
+            playerRef.current.seekTo(clamp(seconds, 0, duration || seconds), true);
         }
     };
 
     const skip = (deltaSeconds: number) => seekTo(currentTime + deltaSeconds);
 
-    // --- Logic ---
+    // --- Actions ---
+
     const handleDynamicMark = () => {
         if (!duration || duration <= 0) return;
-
         if (markStart === null) {
             setMarkStart(currentTime);
         } else {
             const start = Math.min(markStart, currentTime);
             const end = Math.max(markStart, currentTime);
-
             if (end - start < 0.25) { alert("Bubble is too short."); setMarkStart(null); return; }
             if (isOverlapping(start, end, null, 0)) { alert("This overlaps with an existing base bubble!"); setMarkStart(null); return; }
-            
-            const label = `Section ${regions.length + 1}`;
-            setRegions((prev) => [...prev, { start, end, label, layer: 0 }]);
-            setMarkStart(null); 
+            const label = `Section ${regions.filter((r) => !r.layer).length + 1}`;
+            setRegionsWithHistory(regions, (prev) =>
+                syncRegions([...prev, { id: crypto.randomUUID(), start, end, label, layer: 0 }])
+            );
+            setMarkStart(null);
         }
     };
 
     const handleSplit = () => {
         const t = currentTime;
-        // Find the region we are currently inside. Note: If multiple layers overlap this time, 
-        // we'll default to the lowest one (base track) unless we make this selection-based later.
-        const idx = regions.findIndex((r) => t > r.start && t < r.end);
-        if (idx === -1) { alert("Playhead must be inside a bubble to split"); return; }
-        
-        const r = regions[idx];
-        if (t - r.start < 0.25 || r.end - t < 0.25) { alert("Split point too close to edge."); return; }
+        const target = regions.find((r) => t > r.start && t < r.end);
+        if (!target) { alert("Playhead must be inside a bubble to split."); return; }
+        if (t - target.start < 0.25 || target.end - t < 0.25) { alert("Split point too close to edge."); return; }
 
-        setRegions((prev) => {
-            const updated = [...prev];
-            // Split it, maintaining whatever layer it was on
-            updated.splice(idx, 1, 
-                { start: r.start, end: t, label: r.label, layer: r.layer || 0 }, 
-                { start: t, end: r.end, label: r.label, layer: r.layer || 0 }
-            );
-            return updated;
-        });
+        setRegionsWithHistory(regions, (prev) =>
+            syncRegions(
+                prev.flatMap((r) =>
+                    r.id !== target.id
+                        ? [r]
+                        : [
+                              { ...r, id: crypto.randomUUID(), end: t },
+                              { ...r, id: crypto.randomUUID(), start: t },
+                          ]
+                )
+            )
+        );
         setSelectedRegionIds(new Set());
     };
 
     const handleGroup = () => {
-        const ids = Array.from(selectedRegionIds.values());
+        const ids = Array.from(selectedRegionIds);
         if (ids.length < 2) { alert("Select at least 2 regions to group."); return; }
-        
-        const selected = ids.map((i) => regions[i]);
+
+        const selected = regions.filter((r) => ids.includes(r.id));
+
+        // All selected regions must be on the same layer
+        const layers = new Set(selected.map((r) => r.layer || 0));
+        if (layers.size > 1) {
+            alert("All selected regions must be on the same layer to group.");
+            return;
+        }
+
+        // None of the selected regions can already have a parent
+        const alreadyGrouped = selected.some((r) => r.parentId !== undefined);
+        if (alreadyGrouped) {
+            alert("One or more selected bubbles are already part of a group. A bubble can only belong to one group.");
+            return;
+        }
+
         const start = Math.min(...selected.map((r) => r.start));
         const end = Math.max(...selected.map((r) => r.end));
 
-        // Figure out the highest layer currently among our selection
-        const maxSelectedLayer = Math.max(...selected.map((r) => r.layer || 0));
-        let targetLayer = maxSelectedLayer + 1;
-        
-        // Ensure the new overarching bubble doesn't crash into an existing one on that target tier
-        while (regions.some(r => (r.layer || 0) === targetLayer && start < r.end && end > r.start)) {
+        let targetLayer = Math.max(...selected.map((r) => r.layer || 0)) + 1;
+
+        while (
+            regions.some(
+                (r) =>
+                    !ids.includes(r.id) &&
+                    (r.layer || 0) === targetLayer &&
+                    start < r.end &&
+                    end > r.start
+            )
+        ) {
             targetLayer++;
         }
-        
-        const label = `Grouped Section`;
-        // Notice we are NO LONGER deleting the selected items! We just append the parent on top.
-        setRegions(prev => [...prev, { start, end, label, layer: targetLayer }]);
+
+        const parentId = crypto.randomUUID();
+        const parent: Region = {
+            id: parentId,
+            start,
+            end,
+            label: "Grouped Section",
+            layer: targetLayer,
+        };
+
+        setRegionsWithHistory(regions, (prev) =>
+            syncRegions([
+                ...prev.map((r) => (ids.includes(r.id) ? { ...r, parentId } : r)),
+                parent,
+            ])
+        );
         setSelectedRegionIds(new Set());
     };
 
+    const handleDelete = (id: string) => {
+        setRegionsWithHistory(regions, (prev) =>
+            syncRegions(
+                prev
+                    .filter((r) => r.id !== id)
+                    .map((r) => (r.parentId === id ? { ...r, parentId: undefined } : r))
+            )
+        );
+        setSelectedRegionIds((prev) => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+    };
+
     const handleClear = () => {
-        if (confirm("Clear all regions?")) { setRegions([]); setSelectedRegionIds(new Set()); }
+        if (confirm("Clear all regions?")) {
+            pushHistory(regions);
+            // Reset to a single full-timeline bubble
+            setRegions([{ id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 }]);
+            setSelectedRegionIds(new Set());
+        }
     };
 
     // --- Mouse Events ---
+
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        const t = timeFromMouse(e); 
+        const t = timeFromMouse(e);
         if (t === null) return;
-        setDragStart(t); 
+        setDragStart(t);
         isDraggingRef.current = false;
     };
 
@@ -151,46 +283,96 @@ export default function BriformCanvas({
         if (t === null) return;
         if (e.buttons === 1) isDraggingRef.current = true;
 
-        if (dragMode !== "none" && activeRegion !== null) {
+        if (dragMode !== "none" && activeRegionId !== null) {
             setRegions((prev) => {
+                const activeIndex = prev.findIndex((r) => r.id === activeRegionId);
+                if (activeIndex === -1) return prev;
+
                 const updated = [...prev];
-                const region = { ...updated[activeRegion] };
+                const region = { ...updated[activeIndex] };
                 const currentLayer = region.layer || 0;
 
                 if (dragMode === "move") {
                     const width = region.end - region.start;
-                    const newStart = t - width / 2;
+                    const newStart = clamp(t - width / 2, 0, duration - width);
                     const newEnd = newStart + width;
-                    if (newStart >= 0 && newEnd <= duration && !isOverlapping(newStart, newEnd, activeRegion, currentLayer)) {
-                        region.start = newStart; region.end = newEnd;
+                    if (!isOverlapping(newStart, newEnd, region.id, currentLayer)) {
+                        const delta = newStart - region.start;
+                        region.start = newStart;
+                        region.end = newEnd;
+                        updated[activeIndex] = region;
+
+                        return syncRegions(
+                            updated.map((r) =>
+                                r.parentId === region.id
+                                    ? { ...r, start: r.start + delta, end: r.end + delta }
+                                    : r
+                            )
+                        );
                     }
                 } else if (dragMode === "resize-start") {
-                    if (t >= 0 && t < region.end && !isOverlapping(t, region.end, activeRegion, currentLayer)) region.start = t;
+                    if (
+                        t >= 0 &&
+                        t < region.end - 0.25 &&
+                        !isOverlapping(t, region.end, region.id, currentLayer)
+                    ) {
+                        region.start = t;
+                    }
                 } else if (dragMode === "resize-end") {
-                    if (t <= duration && t > region.start && !isOverlapping(region.start, t, activeRegion, currentLayer)) region.end = t;
+                    if (
+                        t <= duration &&
+                        t > region.start + 0.25 &&
+                        !isOverlapping(region.start, t, region.id, currentLayer)
+                    ) {
+                        region.end = t;
+                    }
                 }
-                updated[activeRegion] = region;
-                return updated;
+
+                updated[activeIndex] = region;
+                return syncRegions(updated);
             });
+        }
+    };
+
+    const startDrag = (id: string, mode: DragMode) => {
+        dragSnapshotRef.current = regions.map((r) => ({ ...r }));
+        setActiveRegionId(id);
+        setDragMode(mode);
+    };
+
+    const commitDragToHistory = () => {
+        if (dragSnapshotRef.current) {
+            historyRef.current = [
+                ...historyRef.current.slice(-MAX_HISTORY + 1),
+                dragSnapshotRef.current,
+            ];
+            dragSnapshotRef.current = null;
         }
     };
 
     const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
         const t = timeFromMouse(e);
+
         if (t !== null && dragStart !== null) {
-            const start = Math.min(dragStart, t); 
+            const start = Math.min(dragStart, t);
             const end = Math.max(dragStart, t);
-            
             if (Math.abs(end - start) > 0.25 && !isOverlapping(start, end, null, 0)) {
-                const label = `Section ${regions.length + 1}`;
-                setRegions((prev) => [...prev, { start, end, label, layer: 0 }]);
-            } 
-            else if (!isDraggingRef.current) {
+                const label = `Section ${regions.filter((r) => !r.layer).length + 1}`;
+                setRegionsWithHistory(regions, (prev) =>
+                    syncRegions([...prev, { id: crypto.randomUUID(), start, end, label, layer: 0 }])
+                );
+            } else if (!isDraggingRef.current) {
                 seekTo(t);
             }
         }
-        setDragMode("none"); setActiveRegion(null); setDragStart(null); isDraggingRef.current = false;
+
+        setDragMode("none");
+        setActiveRegionId(null);
+        setDragStart(null);
+        isDraggingRef.current = false;
     };
+
+    // --- Formatting ---
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
@@ -198,10 +380,24 @@ export default function BriformCanvas({
         return `${m}:${String(s).padStart(2, "0")}`;
     };
 
-    // Calculate maximum layer to scale the height of the container dynamically
-    const maxLayer = regions.length > 0 ? Math.max(...regions.map(r => r.layer || 0)) : 0;
-    // Base padding + (Number of layers * 48px per layer)
-    const containerHeightPx = 16 + ((maxLayer + 1) * 48);
+    const maxLayer = regions.length > 0 ? Math.max(...regions.map((r) => r.layer || 0)) : 0;
+    const containerHeightPx = 16 + (maxLayer + 1) * 48;
+    const canUndo = historyRef.current.length > 0;
+
+    const selectedRegions = regions.filter((r) => selectedRegionIds.has(r.id));
+    const selectedLayers = new Set(selectedRegions.map((r) => r.layer || 0));
+    const alreadyGrouped = selectedRegions.some((r) => r.parentId !== undefined);
+    const canGroup =
+        selectedRegions.length >= 2 &&
+        selectedLayers.size === 1 &&
+        !alreadyGrouped;
+
+    // Hint message shown below the timeline
+    let groupHint: string | null = null;
+    if (selectedRegions.length >= 2 && !canGroup) {
+        if (selectedLayers.size > 1) groupHint = "Can only group bubbles on the same layer";
+        else if (alreadyGrouped) groupHint = "One or more bubbles are already in a group";
+    }
 
     return (
         <section className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg p-5 shadow-lg mb-6 border border-gray-200 dark:border-gray-700">
@@ -212,8 +408,7 @@ export default function BriformCanvas({
                 </div>
             </div>
 
-            {/* Dynamic Container Height based on active tiers */}
-            <div 
+            <div
                 className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-1 transition-all duration-300"
                 style={{ height: `${containerHeightPx}px` }}
             >
@@ -222,67 +417,108 @@ export default function BriformCanvas({
                     className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer shadow-inner overflow-hidden"
                     onMouseMove={handleMouseMove}
                     onMouseDown={handleMouseDown}
-                    onMouseUp={handleMouseUp}
-                >   
-                    {/* The Playhead Marker spans the whole height */}
+                    onMouseUp={(e) => {
+                        commitDragToHistory();
+                        handleMouseUp(e);
+                    }}
+                >
+                    {/* Playhead */}
                     <div
                         className="absolute top-0 bottom-0 z-30 w-1 bg-red-500 shadow-sm pointer-events-none transition-all duration-75 ease-linear"
                         style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                     />
-                    
-                    {/* Ghost Bubble (Always on Layer 0 at the bottom) */}
+
+                    {/* Ghost bubble while marking */}
                     {markStart !== null && (
                         <div
                             className="absolute rounded-md border border-red-500 bg-red-500/40 z-10 pointer-events-none animate-pulse"
                             style={{
-                                bottom: `8px`, height: `40px`, // Anchored to base layer
+                                bottom: `8px`,
+                                height: `40px`,
                                 left: `${duration ? (markStart / duration) * 100 : 0}%`,
-                                width: `${duration && currentTime > markStart ? ((currentTime - markStart) / duration) * 100 : 0}%`,
+                                width: `${
+                                    duration && currentTime > markStart
+                                        ? ((currentTime - markStart) / duration) * 100
+                                        : 0
+                                }%`,
                             }}
                         />
                     )}
 
-                    {regions?.map((r, i) => {
-                        const selected = selectedRegionIds.has(i);
+                    {regions.map((r) => {
+                        const selected = selectedRegionIds.has(r.id);
                         const layer = r.layer || 0;
-                        
+                        const isParent = regions.some((c) => c.parentId === r.id);
+
                         return (
                             <div
-                                key={i}
-                                className={`absolute rounded-md border px-2 flex items-center justify-center z-20 select-none ${
-                                    selected
+                                key={r.id}
+                                className={`absolute rounded-md border px-2 flex items-center justify-center z-20 select-none transition-colors ${
+                                    isParent
+                                        ? selected
+                                            ? "bg-purple-600 text-white border-purple-300 shadow-md"
+                                            : "bg-purple-500/80 text-white border-purple-400/50 shadow-sm hover:bg-purple-500"
+                                        : selected
                                         ? "bg-blue-600 text-white border-blue-300 shadow-md"
                                         : "bg-blue-500/90 text-white border-blue-400/50 shadow-sm hover:bg-blue-500"
                                 }`}
                                 style={{
-                                    bottom: `${layer * 48 + 8}px`, // Stacks upwards based on layer tier
+                                    bottom: `${layer * 48 + 8}px`,
                                     height: `40px`,
                                     left: `${duration ? (r.start / duration) * 100 : 0}%`,
-                                    width: `${duration ? ((r.end - r.start) / duration) * 100 : 0}%`,
+                                    width: `${
+                                        duration ? ((r.end - r.start) / duration) * 100 : 0
+                                    }%`,
                                 }}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedRegionIds((prev) => {
                                         const next = new Set(prev);
-                                        if (next.has(i)) next.delete(i); else next.add(i);
+                                        if (next.has(r.id)) next.delete(r.id);
+                                        else next.add(r.id);
                                         return next;
                                     });
                                 }}
-                                onMouseDown={(e) => { e.stopPropagation(); setActiveRegion(i); setDragMode("move"); }}
+                                onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    startDrag(r.id, "move");
+                                }}
                                 onDoubleClick={(e) => {
                                     e.stopPropagation();
                                     const label = prompt("Rename:", r.label);
-                                    if (label) setRegions(prev => prev.map((x, idx) => idx === i ? {...x, label} : x));
+                                    if (label) {
+                                        pushHistory(regions);
+                                        setRegions((prev) =>
+                                            prev.map((x) =>
+                                                x.id === r.id ? { ...x, label } : x
+                                            )
+                                        );
+                                    }
                                     playerRef.current?.playVideo();
                                 }}
-                                onContextMenu={(e) => { e.preventDefault(); setRegions(prev => prev.filter((_, idx) => idx !== i)); }}
+                                onContextMenu={(e) => {
+                                    e.preventDefault();
+                                    handleDelete(r.id);
+                                }}
                             >
-                                <span className="text-xs font-bold truncate pointer-events-none drop-shadow-md">{r.label}</span>
-                                
-                                <div className="absolute left-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-w-resize" 
-                                     onMouseDown={(e) => { e.stopPropagation(); setActiveRegion(i); setDragMode("resize-start"); }} />
-                                <div className="absolute right-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-e-resize" 
-                                     onMouseDown={(e) => { e.stopPropagation(); setActiveRegion(i); setDragMode("resize-end"); }} />
+                                <span className="text-xs font-bold truncate pointer-events-none drop-shadow-md">
+                                    {r.label}
+                                </span>
+
+                                <div
+                                    className="absolute left-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-w-resize"
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        startDrag(r.id, "resize-start");
+                                    }}
+                                />
+                                <div
+                                    className="absolute right-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-e-resize"
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        startDrag(r.id, "resize-end");
+                                    }}
+                                />
                             </div>
                         );
                     })}
@@ -290,29 +526,75 @@ export default function BriformCanvas({
             </div>
 
             <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 h-5">
-                <span>Drag to create • Double-click to rename</span>
+                <span>Drag to create • Double-click to rename • Right-click to delete</span>
+                {groupHint && (
+                    <span className="text-amber-500 dark:text-amber-400">{groupHint}</span>
+                )}
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2 items-center justify-center border-t dark:border-gray-700 pt-4">
-                <button onClick={() => skip(-5)} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">-5s</button>
-                <button onClick={togglePlay} className="px-6 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold w-24">
+                <button
+                    onClick={() => skip(-5)}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                >
+                    -5s
+                </button>
+                <button
+                    onClick={togglePlay}
+                    className="px-6 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold w-24"
+                >
                     {isPlaying ? "Pause" : "Play"}
                 </button>
-                <button onClick={() => skip(5)} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">+5s</button>
-                <div className="w-px h-6 bg-gray-300 mx-2"></div>
-                <button onClick={handleSplit} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">Split</button>
-                <button 
-                    onClick={handleDynamicMark} 
+                <button
+                    onClick={() => skip(5)}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                >
+                    +5s
+                </button>
+
+                <div className="w-px h-6 bg-gray-300 mx-2" />
+
+                <button
+                    onClick={handleSplit}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+                >
+                    Split
+                </button>
+                <button
+                    onClick={handleDynamicMark}
                     className={`px-4 py-1 rounded font-semibold transition-colors w-32 ${
-                        markStart !== null 
-                            ? "bg-red-500 text-white hover:bg-red-600 shadow-inner" 
-                            : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-black dark:text-white"
+                        markStart !== null
+                            ? "bg-red-500 text-white hover:bg-red-600 shadow-inner"
+                            : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-black dark:text-white"
                     }`}
                 >
                     {markStart !== null ? "End Bubble" : "Start Bubble"}
                 </button>
-                <button onClick={handleGroup} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300">Group</button>
-                <button onClick={handleClear} className="px-3 py-1 text-red-500 hover:bg-red-50 rounded ml-2">Clear</button>
+                <button
+                    onClick={handleGroup}
+                    disabled={!canGroup}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title={!canGroup ? "Select 2+ ungrouped bubbles on the same layer" : "Group selected"}
+                >
+                    Group
+                </button>
+
+                <div className="w-px h-6 bg-gray-300 mx-2" />
+
+                <button
+                    onClick={handleUndo}
+                    disabled={!canUndo}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Undo last action"
+                >
+                    ↩ Undo
+                </button>
+                <button
+                    onClick={handleClear}
+                    className="px-3 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                >
+                    Clear
+                </button>
             </div>
         </section>
     );
