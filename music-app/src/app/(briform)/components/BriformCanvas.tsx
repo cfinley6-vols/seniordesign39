@@ -963,7 +963,6 @@ export default function BriformCanvas({
                                                 prev.map((x) => (x.id === r.id ? { ...x, label } : x))
                                             );
                                         }
-                                        playerRef.current?.playVideo();
                                     }}
                                     onContextMenu={(e) => {
                                         e.preventDefault();
