@@ -107,14 +107,6 @@ const cascadeDeleteGroups = (regions: Region[]): Region[] => {
     return current;
 };
 
-/**
- * Resize with neighbor-pushing and squeeze-out.
- *
- * Key fix: the isLeftmost / isRightmost guards only prevent the *active* bubble
- * from having its own border-locked edge dragged. They do NOT prevent the active
- * bubble from consuming neighbors on the other side. So bubble 2 dragging its
- * left edge can still consume bubble 1 even though bubble 1 is leftmost.
- */
 function applyResizeWithNeighbor(
     regions: Region[],
     activeId: string,
@@ -128,28 +120,38 @@ function applyResizeWithNeighbor(
     const getSortedLayer = () =>
         updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
 
-    const getActive = () => updated.find((r) => r.id === activeId);
-
-    const active = getActive();
+    const active = updated.find((r) => r.id === activeId);
     if (!active) return regions;
 
     const layerSorted = getSortedLayer();
 
     if (dragMode === "resize-end") {
-        // Only block if the active bubble IS the rightmost (its right edge is the border)
         const isRightmost = active.end === layerSorted[layerSorted.length - 1]?.end;
         if (isRightmost) return regions;
 
-        const target = clamp(t, active.start + MIN_WIDTH, duration);
+        const target = clamp(t, 0, duration);
 
+        if (target <= active.start + MIN_WIDTH && layer !== 0) {
+            const leftNeighbor = getSortedLayer()
+                .filter((r) => r.id !== activeId && r.end <= active.start + ADJACENCY_TOLERANCE)
+                .sort((a, b) => b.end - a.end)[0];
+            updated = updated.filter((r) => r.id !== activeId);
+            if (leftNeighbor) {
+                const n = updated.find((r) => r.id === leftNeighbor.id);
+                if (n) n.end = active.end;
+            }
+            return fullSync(cascadeDeleteGroups(updated), duration);
+        }
+
+        const clampedTarget = clamp(target, active.start + MIN_WIDTH, duration);
         const bubblesToRight = getSortedLayer()
             .filter((r) => r.id !== activeId && r.start >= active.end - ADJACENCY_TOLERANCE)
             .sort((a, b) => a.start - b.start);
 
         if (bubblesToRight.length === 0) {
-            getActive()!.end = target;
+            updated.find((r) => r.id === activeId)!.end = clampedTarget;
         } else {
-            let cursor = target;
+            let cursor = clampedTarget;
             const toDelete: string[] = [];
             for (const neighbor of bubblesToRight) {
                 if (cursor >= neighbor.end - MIN_WIDTH) {
@@ -162,51 +164,52 @@ function applyResizeWithNeighbor(
             }
             updated = updated.filter((r) => !toDelete.includes(r.id));
             const a = updated.find((r) => r.id === activeId)!;
-            a.end = cursor > target ? cursor : target;
-            // Keep right neighbor flush
+            a.end = cursor > clampedTarget ? cursor : clampedTarget;
             const nextRight = updated
                 .filter((r) => (r.layer || 0) === layer && r.id !== activeId && r.start >= a.end - ADJACENCY_TOLERANCE)
                 .sort((a, b) => a.start - b.start)[0];
             if (nextRight && nextRight.start !== a.end) nextRight.start = a.end;
         }
     } else {
-        // resize-start
-        // Only block if the active bubble IS the leftmost (its left edge is the border)
         const isLeftmost = active.start === layerSorted[0]?.start;
         if (isLeftmost) return regions;
 
-        const target = clamp(t, 0, active.end - MIN_WIDTH);
+        const target = clamp(t, 0, duration);
 
-        // Collect all bubbles strictly to the LEFT of the active bubble
+        if (target >= active.end - MIN_WIDTH && layer !== 0) {
+            const rightNeighbor = getSortedLayer()
+                .filter((r) => r.id !== activeId && r.start >= active.end - ADJACENCY_TOLERANCE)
+                .sort((a, b) => a.start - b.start)[0];
+            updated = updated.filter((r) => r.id !== activeId);
+            if (rightNeighbor) {
+                const n = updated.find((r) => r.id === rightNeighbor.id);
+                if (n) n.start = active.start;
+            }
+            return fullSync(cascadeDeleteGroups(updated), duration);
+        }
+
+        const clampedTarget = clamp(target, 0, active.end - MIN_WIDTH);
         const bubblesToLeft = getSortedLayer()
             .filter((r) => r.id !== activeId && r.end <= active.start + ADJACENCY_TOLERANCE)
-            .sort((a, b) => b.end - a.end); // rightmost-first so we consume nearest first
+            .sort((a, b) => b.end - a.end);
 
         if (bubblesToLeft.length === 0) {
-            getActive()!.start = target;
+            updated.find((r) => r.id === activeId)!.start = clampedTarget;
         } else {
-            let cursor = target;
+            let cursor = clampedTarget;
             const toDelete: string[] = [];
-
             for (const neighbor of bubblesToLeft) {
                 if (cursor <= neighbor.start + MIN_WIDTH) {
-                    // This neighbor is fully consumed — delete it
                     toDelete.push(neighbor.id);
                     cursor = neighbor.start;
                 } else {
-                    // Partially overlap — shrink neighbor's right edge
                     updated.find((r) => r.id === neighbor.id)!.end = cursor;
                     break;
                 }
             }
-
             updated = updated.filter((r) => !toDelete.includes(r.id));
             const a = updated.find((r) => r.id === activeId)!;
-            // cursor may have moved past target if we consumed a neighbor that started
-            // further left — use whichever is the correct new left edge
-            a.start = cursor < target ? cursor : target;
-
-            // Keep left neighbor flush
+            a.start = cursor < clampedTarget ? cursor : clampedTarget;
             const nextLeft = updated
                 .filter((r) => (r.layer || 0) === layer && r.id !== activeId && r.end <= a.start + ADJACENCY_TOLERANCE)
                 .sort((a, b) => b.end - a.end)[0];
@@ -218,7 +221,6 @@ function applyResizeWithNeighbor(
     return fullSync(updated, duration);
 }
 
-// --- Playhead Handle SVG ---
 function PlayheadHandle({ dragging }: { dragging: boolean }) {
     return (
         <svg
@@ -259,13 +261,17 @@ export default function BriformCanvas({
     const [dragMode, setDragMode] = useState<DragMode>("none");
     const [playheadDragPos, setPlayheadDragPos] = useState<number | null>(null);
 
-    // Holds the sought pct after release until currentTime catches up (fixes teleport)
     const lastSeekPctRef = useRef<number | null>(null);
 
+    // confirmedTimeRef: the best known playback position for split operations.
+    // Updated by live playback (small increments) AND explicitly on playhead drag release.
+    // This prevents splitting at a stale paused position after the user drags the playhead.
+    const confirmedTimeRef = useRef<number>(0);
+
     const historyRef = useRef<Region[][]>([]);
+    const redoRef = useRef<Region[][]>([]);
     const isDraggingRef = useRef(false);
     const timelineRef = useRef<HTMLDivElement>(null);
-    const seededRef = useRef(false);
     const dragSnapshotRef = useRef<Region[] | null>(null);
     const dragModeRef = useRef<DragMode>("none");
     const durationRef = useRef(duration);
@@ -273,6 +279,18 @@ export default function BriformCanvas({
 
     useEffect(() => { dragModeRef.current = dragMode; }, [dragMode]);
     useEffect(() => { durationRef.current = duration; }, [duration]);
+
+    // Update confirmedTimeRef for live playback (small incremental steps only).
+    // Large jumps (>1s) are skips/buffering — don't trust them here;
+    // playhead drag releases set confirmedTimeRef directly instead.
+    const prevCurrentTimeRef = useRef(currentTime);
+    useEffect(() => {
+        const delta = Math.abs(currentTime - prevCurrentTimeRef.current);
+        if (delta < 1) {
+            confirmedTimeRef.current = currentTime;
+        }
+        prevCurrentTimeRef.current = currentTime;
+    }, [currentTime]);
 
     // Clear lastSeekPctRef once currentTime has caught up
     useEffect(() => {
@@ -289,15 +307,29 @@ export default function BriformCanvas({
         return duration ? (currentTime / duration) * 100 : 0;
     })();
 
-    // --- Seed ---
+    // --- Seed / missing-bubble guard ---
+    // Watches for absence of any layer-0 bubble whenever duration is known.
+    // A 400ms debounce lets the parent finish loading DB data before deciding
+    // the project is genuinely empty and needs a default bubble inserted.
+    const seedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
-        if (duration > 0 && regions.length === 0 && !seededRef.current) {
-            seededRef.current = true;
-            setRegions([
-                { id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 },
-            ]);
-        }
-    }, [duration, regions.length, setRegions]);
+        if (seedTimerRef.current) clearTimeout(seedTimerRef.current);
+        if (duration <= 0) return;
+
+        const hasLayer0 = regions.some((r) => (r.layer || 0) === 0);
+        if (hasLayer0) return;
+
+        seedTimerRef.current = setTimeout(() => {
+            setRegions((current) => {
+                const stillEmpty = !current.some((r) => (r.layer || 0) === 0);
+                if (!stillEmpty) return current;
+                return [{ id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 }];
+            });
+        }, 400);
+
+        return () => { if (seedTimerRef.current) clearTimeout(seedTimerRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [duration, regions.length]);
 
     // --- Global mouse handlers ---
     useEffect(() => {
@@ -319,6 +351,10 @@ export default function BriformCanvas({
             if (dragModeRef.current === "playhead") {
                 const { pct, t } = getTimeAndPct(e.clientX);
                 if (pct !== null) lastSeekPctRef.current = pct;
+
+                // KEY FIX: immediately update confirmedTimeRef to the dragged-to position
+                // so that Split uses the new position, not wherever the video was paused before.
+                if (t !== null) confirmedTimeRef.current = t;
 
                 setPlayheadDragPos(null);
                 setDragMode("none");
@@ -343,6 +379,7 @@ export default function BriformCanvas({
                     ...historyRef.current.slice(-MAX_HISTORY + 1),
                     dragSnapshotRef.current,
                 ];
+                redoRef.current = [];
                 dragSnapshotRef.current = null;
             }
 
@@ -369,6 +406,7 @@ export default function BriformCanvas({
             ...historyRef.current.slice(-MAX_HISTORY + 1),
             snapshot.map((r) => ({ ...r })),
         ];
+        redoRef.current = [];
     }, []);
 
     const setRegionsWithHistory = useCallback(
@@ -383,7 +421,21 @@ export default function BriformCanvas({
         if (historyRef.current.length === 0) return;
         const prev = historyRef.current[historyRef.current.length - 1];
         historyRef.current = historyRef.current.slice(0, -1);
-        setRegions(prev);
+        setRegions((current) => {
+            redoRef.current = [...redoRef.current.slice(-MAX_HISTORY + 1), current.map((r) => ({ ...r }))];
+            return prev;
+        });
+        setSelectedRegionIds(new Set());
+    }, [setRegions]);
+
+    const handleRedo = useCallback(() => {
+        if (redoRef.current.length === 0) return;
+        const next = redoRef.current[redoRef.current.length - 1];
+        redoRef.current = redoRef.current.slice(0, -1);
+        setRegions((current) => {
+            historyRef.current = [...historyRef.current.slice(-MAX_HISTORY + 1), current.map((r) => ({ ...r }))];
+            return next;
+        });
         setSelectedRegionIds(new Set());
     }, [setRegions]);
 
@@ -408,7 +460,8 @@ export default function BriformCanvas({
     // --- Actions ---
 
     const handleSplit = () => {
-        const t = currentTime;
+        // Use confirmedTimeRef — reflects dragged position immediately, not buffering lag
+        const t = confirmedTimeRef.current;
         const target = regions.find((r) => (r.layer || 0) === 0 && t > r.start && t < r.end);
         if (!target) { alert("Playhead must be inside a base layer bubble to split."); return; }
         if (t - target.start < MIN_WIDTH || target.end - t < MIN_WIDTH) { alert("Split point too close to edge."); return; }
@@ -431,11 +484,18 @@ export default function BriformCanvas({
         const selected = regions.filter((r) => ids.includes(r.id));
         if (selected.some((r) => (r.layer || 0) !== 0)) { alert("Merge only works on base layer bubbles."); return; }
 
-        // Block merging bubbles from different groups
         const parentIds = new Set(selected.map((r) => r.parentId ?? "__none__"));
         if (parentIds.size > 1) {
             alert("Cannot merge bubbles that belong to different groups.");
             return;
+        }
+
+        const sortedSelected = [...selected].sort((a, b) => a.start - b.start);
+        for (let i = 0; i < sortedSelected.length - 1; i++) {
+            if (sortedSelected[i + 1].start - sortedSelected[i].end > ADJACENCY_TOLERANCE) {
+                alert("Can only merge adjacent bubbles. There is a gap between selected bubbles.");
+                return;
+            }
         }
 
         const mergeStart = Math.min(...selected.map((r) => r.start));
@@ -548,12 +608,34 @@ export default function BriformCanvas({
                 const region = updated[activeIndex];
                 const currentLayer = region.layer || 0;
                 const width = region.end - region.start;
+
                 const newStart = clamp(t - width / 2, 0, duration - width);
                 const newEnd = newStart + width;
-                if (!prev.some((r) => r.id !== activeRegionId && (r.layer || 0) === currentLayer && newStart < r.end && newEnd > r.start)) {
-                    const delta = newStart - region.start;
-                    region.start = newStart;
-                    region.end = newEnd;
+
+                const colliders = prev.filter(
+                    (r) => r.id !== activeRegionId && (r.layer || 0) === currentLayer
+                );
+
+                let constrainedStart = newStart;
+                for (const c of colliders) {
+                    if (newStart < c.end && newEnd > c.start) {
+                        const pushRight = c.end;
+                        const pushLeft = c.start - width;
+                        const distRight = Math.abs(newStart - pushRight);
+                        const distLeft = Math.abs(newStart - pushLeft);
+                        constrainedStart = distRight < distLeft ? pushRight : Math.max(0, pushLeft);
+                    }
+                }
+                constrainedStart = clamp(constrainedStart, 0, duration - width);
+                const constrainedEnd = constrainedStart + width;
+
+                const stillCollides = colliders.some(
+                    (r) => constrainedStart < r.end && constrainedEnd > r.start
+                );
+                if (!stillCollides) {
+                    const delta = constrainedStart - region.start;
+                    region.start = constrainedStart;
+                    region.end = constrainedEnd;
                     return fullSync(
                         updated.map((r) =>
                             r.parentId === activeRegionId
@@ -614,6 +696,7 @@ export default function BriformCanvas({
     const maxLayer = regions.length > 0 ? Math.max(...regions.map((r) => r.layer || 0)) : 0;
     const containerHeightPx = 16 + (maxLayer + 1) * 48;
     const canUndo = historyRef.current.length > 0;
+    const canRedo = redoRef.current.length > 0;
 
     const selectedRegions = regions.filter((r) => selectedRegionIds.has(r.id));
     const selectedLayers = new Set(selectedRegions.map((r) => r.layer || 0));
@@ -623,7 +706,12 @@ export default function BriformCanvas({
         const ms = selectedRegions.filter((r) => (r.layer || 0) === 0);
         if (ms.length < 2) return false;
         const pids = new Set(ms.map((r) => r.parentId ?? "__none__"));
-        return pids.size === 1;
+        if (pids.size > 1) return false;
+        const sorted = [...ms].sort((a, b) => a.start - b.start);
+        for (let i = 0; i < sorted.length - 1; i++) {
+            if (sorted[i + 1].start - sorted[i].end > ADJACENCY_TOLERANCE) return false;
+        }
+        return true;
     })();
 
     let groupHint: string | null = null;
@@ -779,7 +867,7 @@ export default function BriformCanvas({
                     onClick={handleMerge}
                     disabled={!canMerge}
                     className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                    title={!canMerge ? "Select 2+ base layer bubbles from the same group to merge" : "Merge selected"}
+                    title={!canMerge ? "Select 2+ adjacent base layer bubbles from the same group" : "Merge selected"}
                 >
                     Merge
                 </button>
@@ -798,8 +886,17 @@ export default function BriformCanvas({
                     onClick={handleUndo}
                     disabled={!canUndo}
                     className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Undo"
                 >
                     ↩ Undo
+                </button>
+                <button
+                    onClick={handleRedo}
+                    disabled={!canRedo}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Redo"
+                >
+                    ↪ Redo
                 </button>
                 <button onClick={handleClear} className="px-3 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">Clear</button>
             </div>
