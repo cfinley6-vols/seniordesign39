@@ -201,7 +201,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
             ) : (
                 <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex justify-between items-end mb-4">
-                        <h2 className="text-xl font-semibold">{track.name}</h2>
+                        <h2 className="text-xl font-semibold">{videoTitle}</h2>
                         <button
                             onClick={handleChangeVideo}
                             className="text-xs text-red-500 hover:underline"
