@@ -84,29 +84,96 @@ const clampBorders = (regions: Region[], duration: number): Region[] => {
 const fullSync = (regions: Region[], duration: number): Region[] =>
     syncRegions(clampBorders(regions, duration));
 
+/**
+ * cascadeDeleteGroups: when a bubble is deleted (or squeezed out), walk UP the
+ * parent chain from each affected bubble to find the topmost ancestor, then
+ * delete top-down so that each removal cascades correctly through the hierarchy.
+ *
+ * Algorithm:
+ * 1. Find every group that now has < 2 children.
+ * 2. For each such group, walk up to its topmost ancestor (a group with no parent,
+ *    or whose parent is not also being deleted).
+ * 3. Sort the groups to delete by layer descending (highest first).
+ * 4. Delete them one layer at a time, orphaning children after each pass.
+ * 5. Repeat until no more under-populated groups remain.
+ */
 const cascadeDeleteGroups = (regions: Region[]): Region[] => {
     let current = [...regions];
     let changed = true;
+
     while (changed) {
         changed = false;
-        const toDelete = current.filter((r) => {
-            const childCount = current.filter((c) => c.parentId === r.id).length;
+
+        // Find all groups with fewer than 2 children
+        const underPopulated = current.filter((r) => {
             const isParent = current.some((c) => c.parentId === r.id);
-            return isParent && childCount < 2;
+            if (!isParent) return false;
+            return current.filter((c) => c.parentId === r.id).length < 2;
         });
-        if (toDelete.length > 0) {
-            const deleteIds = new Set(toDelete.map((r) => r.id));
-            current = current
-                .filter((r) => !deleteIds.has(r.id))
-                .map((r) =>
-                    r.parentId && deleteIds.has(r.parentId) ? { ...r, parentId: undefined } : r
-                );
-            changed = true;
+
+        if (underPopulated.length === 0) break;
+
+        // Walk up to find topmost ancestor for each under-populated group
+        const getAncestorChain = (id: string): string[] => {
+            const chain: string[] = [id];
+            let r = current.find((x) => x.id === id);
+            while (r?.parentId) {
+                const parent = current.find((x) => x.id === r!.parentId);
+                if (!parent) break;
+                chain.push(parent.id);
+                r = parent;
+            }
+            return chain; // [self, parent, grandparent, ...]
+        };
+
+        // Collect all IDs that should be deleted (the under-populated ones + any ancestor
+        // that would also become under-populated once its child is gone)
+        const toDeleteIds = new Set<string>();
+        for (const g of underPopulated) {
+            // Walk up — if removing g would leave g's parent with < 2 children, delete parent too
+            const chain = getAncestorChain(g.id);
+            for (const id of chain) {
+                const parent = current.find((x) => x.id === id);
+                if (!parent) continue;
+                const childCount = current.filter((c) => c.parentId === id).length;
+                // This group has < 2 children (or will once its child is deleted)
+                if (childCount < 2) {
+                    toDeleteIds.add(id);
+                } else {
+                    break; // ancestor is still healthy — stop walking up
+                }
+            }
         }
+
+        if (toDeleteIds.size === 0) break;
+
+        // Delete highest layer first (top-down)
+        const sortedToDelete = [...toDeleteIds].sort((a, b) => {
+            const layerA = current.find((r) => r.id === a)?.layer || 0;
+            const layerB = current.find((r) => r.id === b)?.layer || 0;
+            return layerB - layerA; // descending
+        });
+
+        for (const id of sortedToDelete) {
+            current = current
+                .filter((r) => r.id !== id)
+                .map((r) => r.parentId === id ? { ...r, parentId: undefined } : r);
+        }
+
+        changed = true;
     }
+
     return current;
 };
 
+/**
+ * applyResizeWithNeighbor: resize the active bubble, pushing or consuming neighbors.
+ *
+ * Fast-drag fix: neighbor lookup uses the SORTED POSITION in the layer array
+ * rather than proximity to active.end/active.start. This means even if the mouse
+ * skipped over a bubble in one frame, we still find it by sorted order and consume
+ * everything between the active bubble and the target position correctly.
+ */
 function applyResizeWithNeighbor(
     regions: Region[],
     activeId: string,
@@ -117,6 +184,7 @@ function applyResizeWithNeighbor(
     const layer = regions.find((r) => r.id === activeId)?.layer || 0;
     let updated = regions.map((r) => ({ ...r }));
 
+    // Always re-derive sorted layer from updated so deletions are reflected
     const getSortedLayer = () =>
         updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
 
@@ -124,17 +192,18 @@ function applyResizeWithNeighbor(
     if (!active) return regions;
 
     const layerSorted = getSortedLayer();
+    const activeIdx = layerSorted.findIndex((r) => r.id === activeId);
 
     if (dragMode === "resize-end") {
-        const isRightmost = active.end === layerSorted[layerSorted.length - 1]?.end;
+        const isRightmost = activeIdx === layerSorted.length - 1;
         if (isRightmost) return regions;
 
         const target = clamp(t, 0, duration);
 
+        // Drag-to-zero: active bubble itself shrinks away
         if (target <= active.start + MIN_WIDTH && layer !== 0) {
-            const leftNeighbor = getSortedLayer()
-                .filter((r) => r.id !== activeId && r.end <= active.start + ADJACENCY_TOLERANCE)
-                .sort((a, b) => b.end - a.end)[0];
+            // Give its space to the left neighbor (if any)
+            const leftNeighbor = activeIdx > 0 ? layerSorted[activeIdx - 1] : null;
             updated = updated.filter((r) => r.id !== activeId);
             if (leftNeighbor) {
                 const n = updated.find((r) => r.id === leftNeighbor.id);
@@ -144,9 +213,10 @@ function applyResizeWithNeighbor(
         }
 
         const clampedTarget = clamp(target, active.start + MIN_WIDTH, duration);
-        const bubblesToRight = getSortedLayer()
-            .filter((r) => r.id !== activeId && r.start >= active.end - ADJACENCY_TOLERANCE)
-            .sort((a, b) => a.start - b.start);
+
+        // All bubbles to the RIGHT of the active bubble in sorted order
+        // Using sorted index instead of proximity — immune to fast-drag gaps
+        const bubblesToRight = layerSorted.slice(activeIdx + 1);
 
         if (bubblesToRight.length === 0) {
             updated.find((r) => r.id === activeId)!.end = clampedTarget;
@@ -155,31 +225,36 @@ function applyResizeWithNeighbor(
             const toDelete: string[] = [];
             for (const neighbor of bubblesToRight) {
                 if (cursor >= neighbor.end - MIN_WIDTH) {
+                    // Fully consume this neighbor
                     toDelete.push(neighbor.id);
                     cursor = neighbor.end;
-                } else {
+                } else if (cursor > neighbor.start) {
+                    // Partially overlap — push neighbor right
                     updated.find((r) => r.id === neighbor.id)!.start = cursor;
+                    break;
+                } else {
                     break;
                 }
             }
             updated = updated.filter((r) => !toDelete.includes(r.id));
             const a = updated.find((r) => r.id === activeId)!;
             a.end = cursor > clampedTarget ? cursor : clampedTarget;
-            const nextRight = updated
-                .filter((r) => (r.layer || 0) === layer && r.id !== activeId && r.start >= a.end - ADJACENCY_TOLERANCE)
-                .sort((a, b) => a.start - b.start)[0];
-            if (nextRight && nextRight.start !== a.end) nextRight.start = a.end;
+            // Force flush with the immediate right neighbor
+            const newSorted = updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
+            const newActiveIdx = newSorted.findIndex((r) => r.id === activeId);
+            const immediateRight = newActiveIdx < newSorted.length - 1 ? newSorted[newActiveIdx + 1] : null;
+            if (immediateRight && immediateRight.start !== a.end) immediateRight.start = a.end;
         }
     } else {
-        const isLeftmost = active.start === layerSorted[0]?.start;
+        // resize-start
+        const isLeftmost = activeIdx === 0;
         if (isLeftmost) return regions;
 
         const target = clamp(t, 0, duration);
 
+        // Drag-to-zero: active bubble shrinks away
         if (target >= active.end - MIN_WIDTH && layer !== 0) {
-            const rightNeighbor = getSortedLayer()
-                .filter((r) => r.id !== activeId && r.start >= active.end - ADJACENCY_TOLERANCE)
-                .sort((a, b) => a.start - b.start)[0];
+            const rightNeighbor = activeIdx < layerSorted.length - 1 ? layerSorted[activeIdx + 1] : null;
             updated = updated.filter((r) => r.id !== activeId);
             if (rightNeighbor) {
                 const n = updated.find((r) => r.id === rightNeighbor.id);
@@ -189,9 +264,9 @@ function applyResizeWithNeighbor(
         }
 
         const clampedTarget = clamp(target, 0, active.end - MIN_WIDTH);
-        const bubblesToLeft = getSortedLayer()
-            .filter((r) => r.id !== activeId && r.end <= active.start + ADJACENCY_TOLERANCE)
-            .sort((a, b) => b.end - a.end);
+
+        // All bubbles to the LEFT in sorted order — reversed so nearest-first
+        const bubblesToLeft = layerSorted.slice(0, activeIdx).reverse();
 
         if (bubblesToLeft.length === 0) {
             updated.find((r) => r.id === activeId)!.start = clampedTarget;
@@ -200,20 +275,25 @@ function applyResizeWithNeighbor(
             const toDelete: string[] = [];
             for (const neighbor of bubblesToLeft) {
                 if (cursor <= neighbor.start + MIN_WIDTH) {
+                    // Fully consume this neighbor
                     toDelete.push(neighbor.id);
                     cursor = neighbor.start;
-                } else {
+                } else if (cursor < neighbor.end) {
+                    // Partially overlap — push neighbor left
                     updated.find((r) => r.id === neighbor.id)!.end = cursor;
+                    break;
+                } else {
                     break;
                 }
             }
             updated = updated.filter((r) => !toDelete.includes(r.id));
             const a = updated.find((r) => r.id === activeId)!;
             a.start = cursor < clampedTarget ? cursor : clampedTarget;
-            const nextLeft = updated
-                .filter((r) => (r.layer || 0) === layer && r.id !== activeId && r.end <= a.start + ADJACENCY_TOLERANCE)
-                .sort((a, b) => b.end - a.end)[0];
-            if (nextLeft && nextLeft.end !== a.start) nextLeft.end = a.start;
+            // Force flush with the immediate left neighbor
+            const newSorted = updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
+            const newActiveIdx = newSorted.findIndex((r) => r.id === activeId);
+            const immediateLeft = newActiveIdx > 0 ? newSorted[newActiveIdx - 1] : null;
+            if (immediateLeft && immediateLeft.end !== a.start) immediateLeft.end = a.start;
         }
     }
 
@@ -276,9 +356,17 @@ export default function BriformCanvas({
     const dragModeRef = useRef<DragMode>("none");
     const durationRef = useRef(duration);
     const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Keep a ref to playerRef.current so the global mouseup closure always sees
+    // the latest player instance without needing to re-register the listener.
+    const playerInstanceRef = useRef<any>(null);
+    const isPlayingRef = useRef(isPlaying);
+    const togglePlayRef = useRef(togglePlay);
 
     useEffect(() => { dragModeRef.current = dragMode; }, [dragMode]);
     useEffect(() => { durationRef.current = duration; }, [duration]);
+    useEffect(() => { playerInstanceRef.current = playerRef?.current ?? null; }, );
+    useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
+    useEffect(() => { togglePlayRef.current = togglePlay; }, [togglePlay]);
 
     // Update confirmedTimeRef for live playback (small incremental steps only).
     // Large jumps (>1s) are skips/buffering — don't trust them here;
@@ -366,9 +454,18 @@ export default function BriformCanvas({
 
                 if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
                 pauseTimerRef.current = setTimeout(() => {
-                    const state = playerRef?.current?.getPlayerState?.();
-                    if (state === 1) playerRef.current.pauseVideo();
-                }, 150);
+                    // Use playerInstanceRef so we always get the current player,
+                    // not a stale closure value from when the effect first ran.
+                    const player = playerInstanceRef.current;
+                    const state = player?.getPlayerState?.();
+                    // Pause if playing (1) or buffering (3)
+                    if (state === 1 || state === 3) {
+                        player?.pauseVideo?.();
+                    } else if (isPlayingRef.current) {
+                        // Fallback: if parent thinks it's playing, use togglePlay
+                        togglePlayRef.current?.();
+                    }
+                }, 250);
 
                 isDraggingRef.current = false;
                 return;
@@ -564,12 +661,51 @@ export default function BriformCanvas({
     const handleDelete = (id: string) => {
         const target = regions.find((r) => r.id === id);
         if (!target || (target.layer || 0) === 0) return;
-        setRegionsWithHistory(regions, (prev) =>
-            fullSync(
-                prev.filter((r) => r.id !== id).map((r) => (r.parentId === id ? { ...r, parentId: undefined } : r)),
-                duration
-            )
-        );
+
+        setRegionsWithHistory(regions, (prev) => {
+            // Walk UP the parent chain from the deleted bubble to collect all
+            // ancestors that would become under-populated (< 2 children) after
+            // this deletion. Collect them ordered bottom-up so we can delete
+            // top-down (highest layer first) afterwards.
+            const walkUp = (startId: string, list: Region[]): string[] => {
+                const ids: string[] = [startId];
+                let current = list.find((r) => r.id === startId);
+                while (current?.parentId) {
+                    const parent = list.find((r) => r.id === current!.parentId);
+                    if (!parent) break;
+                    // Count how many children parent STILL has after removing `startId` branch
+                    const remaining = list.filter(
+                        (r) => r.parentId === parent.id && !ids.includes(r.id)
+                    ).length;
+                    if (remaining < 2) {
+                        ids.push(parent.id);
+                        current = parent;
+                    } else {
+                        break; // parent still has enough children — stop
+                    }
+                }
+                return ids;
+            };
+
+            const chainToDelete = walkUp(id, prev);
+
+            // Sort highest layer first so we delete top-down
+            chainToDelete.sort((a, b) => {
+                const la = prev.find((r) => r.id === a)?.layer || 0;
+                const lb = prev.find((r) => r.id === b)?.layer || 0;
+                return lb - la;
+            });
+
+            let result = [...prev];
+            for (const deleteId of chainToDelete) {
+                result = result
+                    .filter((r) => r.id !== deleteId)
+                    .map((r) => r.parentId === deleteId ? { ...r, parentId: undefined } : r);
+            }
+
+            return fullSync(result, duration);
+        });
+
         setSelectedRegionIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     };
 
@@ -653,7 +789,11 @@ export default function BriformCanvas({
     const handleTimelineMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isDraggingRef.current && dragStart !== null && dragMode === "none") {
             const t = timeFromClient(e.clientX);
-            if (t !== null) seekTo(t);
+            if (t !== null) {
+                seekTo(t);
+                // Also update confirmedTimeRef so Split uses this new position immediately
+                confirmedTimeRef.current = t;
+            }
         }
 
         // --- DRAG-TO-DELETE: remove a non-layer-0 bubble if dragged into empty space ---
@@ -810,7 +950,11 @@ export default function BriformCanvas({
                                             return next;
                                         });
                                     }}
-                                    onMouseDown={(e) => { e.stopPropagation(); startDrag(r.id, "move"); }}
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        // Only allow moving base-layer (layer 0) bubbles
+                                        if ((r.layer || 0) === 0) startDrag(r.id, "move");
+                                    }}
                                     onDoubleClick={(e) => {
                                         e.stopPropagation();
                                         const label = prompt("Rename:", r.label);
