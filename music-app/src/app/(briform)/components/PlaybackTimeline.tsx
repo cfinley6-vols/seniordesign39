@@ -103,12 +103,6 @@ export function PlaybackTimeline({
 		onTimeUpdate(newTime);
 	};
 
-	const formatTime = (seconds: number) => {
-		const m = Math.floor(seconds / 60);
-		const s = Math.floor(seconds % 60);
-		return `${m}:${String(s).padStart(2, "0")}`;
-	};
-
 	return (
 		<div className="w-full max-w-5xl mx-auto flex flex-col gap-6">
 			{/* The Custom Separately Displayed Timeline */}

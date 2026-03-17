@@ -65,7 +65,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
             // 2. Tell Supabase to wipe the video ID and reset the saved regions
             setIsSaving(true);
             try {
-                await saveProject(projectId, { video_id: null, data: [] });
+                await saveProject(projectId, { video_id: "", data: [] });
             } catch (error) {
                 console.error("Error clearing video in database:", error);
                 alert("Failed to clear the video from the server. Please try again.");
