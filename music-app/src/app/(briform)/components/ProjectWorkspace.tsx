@@ -6,6 +6,7 @@ import YouTubeEmbedWithSearch from "./YouTubeEmbedWithSearch";
 import { PlaybackTimeline } from "./PlaybackTimeline";
 import { saveProject } from "@/app/(briform)/briform/actions"
 import BriformCanvas, { Region } from "./BriformCanvas";
+import Video from "@/app/(briform)/components/YouTubeEmbedWithSearch";
 
 type Track = {
 	id: string;
@@ -30,6 +31,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
     const [duration, setDuration] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
+	const [videoTitle, setVideoTitle] = useState("");
 
 	// We hold the ref here to pass to both children
     const playerRef = useRef<any>(null);
@@ -49,7 +51,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
     }, [projectId]);
 
 	const handleVideoLoaded = (videoId: string) => {
-        setTrack({ id: videoId, name: "Project Video", duration_ms: 0 });
+        setTrack({ id: videoId, name: videoTitle, duration_ms: duration});
         handleSaveVideo(videoId);
         // Reset state
         setRegions([]);
@@ -199,7 +201,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
             ) : (
                 <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex justify-between items-end mb-4">
-                        <h2 className="text-xl font-semibold">Workspace</h2>
+                        <h2 className="text-xl font-semibold">{track.name}</h2>
                         <button
                             onClick={handleChangeVideo}
                             className="text-xs text-red-500 hover:underline"
@@ -225,6 +227,7 @@ export default function ProjectWorkspace({ projectId, initialVideoId }: ProjectW
                         videoId={track.id}
 						currentTime={currentTime}
                         duration={duration}
+						onTitleChange={setVideoTitle}
                         onDurationChange={setDuration}
                         onTimeUpdate={setCurrentTime}
                         onStateChange={setIsPlaying}

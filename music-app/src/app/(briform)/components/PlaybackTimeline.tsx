@@ -14,6 +14,7 @@ interface PlaybackTimelineProps {
 	videoId: string;
 	currentTime: number;
 	duration: number;
+	onTitleChange: (title: string) => void;
 	onDurationChange: (d: number) => void;
 	onTimeUpdate: (t: number) => void;
 	onStateChange: (isPlaying: boolean) => void;
@@ -25,6 +26,7 @@ export function PlaybackTimeline({
 	videoId,
 	currentTime,
 	duration,
+	onTitleChange,
 	onDurationChange,
 	onTimeUpdate,
 	onStateChange,
@@ -55,6 +57,8 @@ export function PlaybackTimeline({
 				},
 				events: {
 					onReady: (event: any) => {
+						const title = event.target.getVideoData().title;
+						onTitleChange(title);
 						const d = event.target.getDuration();
 						onDurationChange(d);
 						onReady();

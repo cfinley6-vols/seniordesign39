@@ -12,6 +12,7 @@ type Video = {
   description: string;
   thumbnail: string;
   channelTitle: string;
+  duration: string;
 };
 
 function extractYouTubeId(input: string): string | null {
