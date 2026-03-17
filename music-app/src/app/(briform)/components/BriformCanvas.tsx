@@ -10,7 +10,20 @@ export type Region = {
     label: string;
     layer?: number;
     parentId?: string;
+    color?: string; // hex color, e.g. "#3b82f6"
 };
+
+// Preset palette — name + base hex + selected (darker) hex + border hex
+const COLOR_PALETTE: { name: string; base: string; selected: string; border: string }[] = [
+    { name: "Blue",   base: "#3b82f6", selected: "#2563eb", border: "#93c5fd" },
+    { name: "Purple", base: "#a855f7", selected: "#9333ea", border: "#d8b4fe" },
+    { name: "Green",  base: "#22c55e", selected: "#16a34a", border: "#86efac" },
+    { name: "Red",    base: "#ef4444", selected: "#dc2626", border: "#fca5a5" },
+    { name: "Orange", base: "#f97316", selected: "#ea580c", border: "#fdba74" },
+    { name: "Yellow", base: "#eab308", selected: "#ca8a04", border: "#fde047" },
+    { name: "Pink",   base: "#ec4899", selected: "#db2777", border: "#f9a8d4" },
+    { name: "Teal",   base: "#14b8a6", selected: "#0d9488", border: "#5eead4" },
+];
 
 type DragMode = "none" | "move" | "resize-start" | "resize-end" | "playhead";
 
@@ -340,6 +353,9 @@ export default function BriformCanvas({
     const [activeRegionId, setActiveRegionId] = useState<string | null>(null);
     const [dragMode, setDragMode] = useState<DragMode>("none");
     const [playheadDragPos, setPlayheadDragPos] = useState<number | null>(null);
+    // Zoom: visible time window [zoomStart, zoomEnd] in seconds
+    const [zoomStart, setZoomStart] = useState<number>(0);
+    const [zoomEnd, setZoomEnd] = useState<number>(0); // 0 = unset, will follow duration
 
     const lastSeekPctRef = useRef<number | null>(null);
 
@@ -356,6 +372,9 @@ export default function BriformCanvas({
     const dragModeRef = useRef<DragMode>("none");
     const durationRef = useRef(duration);
     const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Refs for zoom so the global mouseup closure always sees current values
+    const zoomStartRef = useRef(0);
+    const zoomEndRef = useRef(0);
     // Keep a ref to playerRef.current so the global mouseup closure always sees
     // the latest player instance without needing to re-register the listener.
     const playerInstanceRef = useRef<any>(null);
@@ -363,10 +382,18 @@ export default function BriformCanvas({
     const togglePlayRef = useRef(togglePlay);
 
     useEffect(() => { dragModeRef.current = dragMode; }, [dragMode]);
-    useEffect(() => { durationRef.current = duration; }, [duration]);
+    useEffect(() => {
+        durationRef.current = duration;
+        // When duration becomes known and zoom is unset, initialise to full view
+        if (duration > 0) {
+            setZoomEnd((prev) => prev === 0 ? duration : prev);
+        }
+    }, [duration]);
     useEffect(() => { playerInstanceRef.current = playerRef?.current ?? null; }, );
     useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
     useEffect(() => { togglePlayRef.current = togglePlay; }, [togglePlay]);
+    useEffect(() => { zoomStartRef.current = zoomStart; }, [zoomStart]);
+    useEffect(() => { zoomEndRef.current = zoomEnd; }, [zoomEnd]);
 
     // Update confirmedTimeRef for live playback (small incremental steps only).
     // Large jumps (>1s) are skips/buffering — don't trust them here;
@@ -389,10 +416,66 @@ export default function BriformCanvas({
         }
     }, [currentTime, duration]);
 
+    // Auto-pan: smoothly follow the playhead while it is playing.
+    //
+    // While playing, we keep the playhead pinned at PLAYHEAD_ANCHOR (20% from left).
+    // The window moves every currentTime tick to maintain that anchor position,
+    // so the playhead appears stationary and the timeline scrolls under it — smooth,
+    // no jumps.
+    //
+    // While NOT playing (paused/seeking), we do NOT auto-pan. The user is in control
+    // and the window should stay wherever they left it. We only snap if the playhead
+    // is completely outside the window after a seek.
+    const PLAYHEAD_ANCHOR = 0.2; // playhead sits at 20% from the left while playing
+    const isPlayingRef2 = useRef(isPlaying);
+    useEffect(() => { isPlayingRef2.current = isPlaying; }, [isPlaying]);
+
+    useEffect(() => {
+        if (duration <= 0) return;
+        const start = zoomStartRef.current;
+        const end = zoomEndRef.current > 0 ? zoomEndRef.current : duration;
+        const range = end - start;
+
+        // Only auto-pan when zoomed in
+        if (range >= duration - 0.1) return;
+
+        const t = currentTime;
+
+        if (isPlayingRef2.current) {
+            // PLAYING: keep playhead at fixed anchor position within the window.
+            // newStart is wherever puts `t` at PLAYHEAD_ANCHOR fraction of range.
+            const newStart = clamp(t - range * PLAYHEAD_ANCHOR, 0, duration - range);
+            const newEnd = newStart + range;
+            // Only update if the window actually needs to move (avoids redundant renders)
+            if (Math.abs(newStart - start) > 0.01) {
+                setZoomStart(newStart);
+                setZoomEnd(newEnd);
+            }
+        } else {
+            // PAUSED / SEEKING: only snap if playhead is completely outside the window
+            if (t < start) {
+                const newStart = clamp(t - range * 0.2, 0, duration - range);
+                setZoomStart(newStart);
+                setZoomEnd(newStart + range);
+            } else if (t > end) {
+                const newStart = clamp(t - range * 0.8, 0, duration - range);
+                setZoomStart(newStart);
+                setZoomEnd(newStart + range);
+            }
+        }
+    }, [currentTime, duration]);
+
+    // Effective zoom window — must be computed before playheadPct uses timeToPct
+    const visStart = zoomStart;
+    const visEnd = zoomEnd > 0 ? zoomEnd : duration;
+    const visRange = Math.max(visEnd - visStart, 0.1);
+    const timeToPct = (t: number) => ((t - visStart) / visRange) * 100;
+
     const playheadPct = (() => {
         if (playheadDragPos !== null) return playheadDragPos;
+        // lastSeekPctRef is stored as a zoom-relative pct already when dragging
         if (lastSeekPctRef.current !== null) return lastSeekPctRef.current;
-        return duration ? (currentTime / duration) * 100 : 0;
+        return timeToPct(currentTime);
     })();
 
     // --- Seed / missing-bubble guard ---
@@ -424,8 +507,13 @@ export default function BriformCanvas({
         const getTimeAndPct = (clientX: number) => {
             if (!timelineRef.current || durationRef.current <= 0) return { pct: null, t: null };
             const rect = timelineRef.current.getBoundingClientRect();
-            const pct = clamp(((clientX - rect.left) / rect.width) * 100, 0, 100);
-            const t = clamp(((clientX - rect.left) / rect.width) * durationRef.current, 0, durationRef.current);
+            const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
+            // Map into zoom window — visStart/visEnd captured via closure from component scope
+            const currentVisStart = zoomStartRef.current;
+            const currentVisEnd = zoomEndRef.current > 0 ? zoomEndRef.current : durationRef.current;
+            const currentVisRange = Math.max(currentVisEnd - currentVisStart, 0.1);
+            const t = clamp(currentVisStart + ratio * currentVisRange, 0, durationRef.current);
+            const pct = ratio * 100; // percentage across visible window
             return { pct, t };
         };
 
@@ -542,10 +630,62 @@ export default function BriformCanvas({
         (clientX: number): number | null => {
             if (!timelineRef.current) return null;
             const rect = timelineRef.current.getBoundingClientRect();
-            return clamp(((clientX - rect.left) / rect.width) * (duration || 1), 0, duration || 1);
+            const ratio = (clientX - rect.left) / rect.width;
+            // Map pixel ratio into the zoom window
+            return clamp(visStart + ratio * visRange, 0, duration || 1);
         },
-        [duration]
+        [duration, visStart, visRange]
     );
+
+    // Zoom helpers — all zoom operations center on the current playhead position
+    const MIN_ZOOM_RANGE = 10; // minimum 10 seconds visible
+    const MAX_ZOOM_RANGE = duration; // max = full duration
+
+    const zoomAround = (anchor: number, newRange: number) => {
+        const clamped = clamp(newRange, MIN_ZOOM_RANGE, duration);
+        // Center the window on anchor, clamped so we don't go past 0 or duration
+        let newStart = anchor - clamped / 2;
+        let newEnd = anchor + clamped / 2;
+        if (newStart < 0) { newEnd = Math.min(duration, newEnd - newStart); newStart = 0; }
+        if (newEnd > duration) { newStart = Math.max(0, newStart - (newEnd - duration)); newEnd = duration; }
+        setZoomStart(newStart);
+        setZoomEnd(newEnd);
+    };
+
+    const handleZoomIn = () => {
+        const anchor = confirmedTimeRef.current; // center on current playhead
+        zoomAround(anchor, visRange / 2);
+    };
+    const handleZoomOut = () => {
+        const anchor = confirmedTimeRef.current;
+        zoomAround(anchor, visRange * 2);
+    };
+    const handleZoomReset = () => {
+        setZoomStart(0);
+        setZoomEnd(duration);
+    };
+    // Pan by scrolling inside the timeline — also wired as a native non-passive
+    // listener (see useEffect below) so e.preventDefault() actually blocks page scroll.
+    const handleTimelineWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        if (duration <= 0) return;
+        const panAmount = (e.deltaX !== 0 ? e.deltaX : e.deltaY) * (visRange / 500);
+        const newStart = clamp(visStart + panAmount, 0, duration - visRange);
+        const newEnd = newStart + visRange;
+        setZoomStart(newStart);
+        setZoomEnd(newEnd);
+    };
+
+    // Attach a native non-passive wheel listener so preventDefault() stops page scroll
+    useEffect(() => {
+        const el = timelineRef.current;
+        if (!el) return;
+        const handler = (e: WheelEvent) => {
+            e.preventDefault();
+        };
+        el.addEventListener("wheel", handler, { passive: false });
+        return () => el.removeEventListener("wheel", handler);
+    });
 
     const seekTo = (seconds: number) => {
         if (playerRef?.current?.seekTo)
@@ -630,22 +770,37 @@ export default function BriformCanvas({
         const ids = Array.from(selectedRegionIds);
         if (ids.length < 2) { alert("Select at least 2 regions to group."); return; }
         const selected = regions.filter((r) => ids.includes(r.id));
-        const layers = new Set(selected.map((r) => r.layer || 0));
-        if (layers.size > 1) { alert("All selected regions must be on the same layer to group."); return; }
-        if (selected.some((r) => r.parentId !== undefined)) { alert("One or more selected bubbles are already part of a group."); return; }
 
-        const sortedSelected = [...selected].sort((a, b) => a.start - b.start);
-        for (let i = 0; i < sortedSelected.length - 1; i++) {
-            if (sortedSelected[i + 1].start - sortedSelected[i].end > ADJACENCY_TOLERANCE) {
-                alert("All bubbles in a group must be touching. There is a gap between selected bubbles.");
+        // None of the selected bubbles can already have a parent
+        if (selected.some((r) => r.parentId !== undefined)) {
+            alert("One or more selected bubbles are already part of a group.");
+            return;
+        }
+
+        // Selected bubbles must form a contiguous time span (no gaps) when projected
+        // onto the timeline, regardless of which layers they are on.
+        const sortedByStart = [...selected].sort((a, b) => a.start - b.start);
+        for (let i = 0; i < sortedByStart.length - 1; i++) {
+            const gap = sortedByStart[i + 1].start - sortedByStart[i].end;
+            if (gap > ADJACENCY_TOLERANCE) {
+                alert("All bubbles in a group must be touching with no time gaps between them.");
                 return;
             }
         }
 
         const start = Math.min(...selected.map((r) => r.start));
         const end = Math.max(...selected.map((r) => r.end));
+
+        // Place the new parent one layer above the highest selected bubble
         let targetLayer = Math.max(...selected.map((r) => r.layer || 0)) + 1;
-        while (regions.some((r) => !ids.includes(r.id) && (r.layer || 0) === targetLayer && start < r.end && end > r.start)) {
+
+        // Bump up if something already occupies that layer in the same time range
+        // (excluding the selected bubbles themselves)
+        while (
+            regions.some(
+                (r) => !ids.includes(r.id) && (r.layer || 0) === targetLayer && start < r.end && end > r.start
+            )
+        ) {
             targetLayer++;
         }
 
@@ -707,6 +862,13 @@ export default function BriformCanvas({
         });
 
         setSelectedRegionIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    };
+
+    const handleColorChange = (color: string) => {
+        if (selectedRegionIds.size === 0) return;
+        setRegionsWithHistory(regions, (prev) =>
+            prev.map((r) => selectedRegionIds.has(r.id) ? { ...r, color } : r)
+        );
     };
 
     const handleClear = () => {
@@ -841,7 +1003,16 @@ export default function BriformCanvas({
     const selectedRegions = regions.filter((r) => selectedRegionIds.has(r.id));
     const selectedLayers = new Set(selectedRegions.map((r) => r.layer || 0));
     const alreadyGrouped = selectedRegions.some((r) => r.parentId !== undefined);
-    const canGroup = selectedRegions.length >= 2 && selectedLayers.size === 1 && !alreadyGrouped;
+    const canGroup = (() => {
+        if (selectedRegions.length < 2) return false;
+        if (alreadyGrouped) return false;
+        // Check contiguity across all selected bubbles regardless of layer
+        const sorted = [...selectedRegions].sort((a, b) => a.start - b.start);
+        for (let i = 0; i < sorted.length - 1; i++) {
+            if (sorted[i + 1].start - sorted[i].end > ADJACENCY_TOLERANCE) return false;
+        }
+        return true;
+    })();
     const canMerge = (() => {
         const ms = selectedRegions.filter((r) => (r.layer || 0) === 0);
         if (ms.length < 2) return false;
@@ -856,63 +1027,111 @@ export default function BriformCanvas({
 
     let groupHint: string | null = null;
     if (selectedRegions.length >= 2 && !canGroup) {
-        if (selectedLayers.size > 1) groupHint = "Can only group bubbles on the same layer";
-        else if (alreadyGrouped) groupHint = "One or more bubbles are already in a group";
+        if (alreadyGrouped) groupHint = "One or more bubbles are already in a group";
+        else groupHint = "All selected bubbles must be touching with no time gaps";
     }
 
     return (
-        <section className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg p-5 shadow-lg mb-6 border border-gray-200 dark:border-gray-700">
+        <section
+            className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg p-5 shadow-lg mb-6 border border-gray-200 dark:border-gray-700"
+            onClick={() => setSelectedRegionIds(new Set())}
+        >
             <div className="flex items-center justify-between mb-3">
                 <div className="font-semibold text-lg">Form Diagram</div>
-                <div className="text-sm opacity-80 font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
-                    {formatTime(currentTime)} / {formatTime(duration ? Math.floor(duration) : 0)}
+                <div className="flex items-center gap-2">
+                    {(zoomStart > 0 || (zoomEnd > 0 && zoomEnd < duration)) && (
+                        <span className="text-xs opacity-60 font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+                            {formatTime(visStart)}–{formatTime(visEnd)}
+                        </span>
+                    )}
+                    <div className="text-sm opacity-80 font-mono bg-gray-100 dark:bg-gray-900 px-2 py-1 rounded">
+                        {formatTime(currentTime)} / {formatTime(duration ? Math.floor(duration) : 0)}
+                    </div>
                 </div>
             </div>
 
             <div className="pt-5">
                 <div
-                    className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-1 transition-all duration-300"
+                    className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-1 transition-all duration-300 overflow-visible"
                     style={{ height: `${containerHeightPx}px` }}
                 >
+                    {/* Playhead handle — outside the clipped timeline so it sticks up above.
+                         Only shown when the playhead is within the visible zoom window. */}
+                    {(playheadPct >= 0 && playheadPct <= 100) && (
+                        <div
+                            className="absolute z-40 pointer-events-none"
+                            style={{ inset: 0 }}
+                        >
+                            <div
+                                className="absolute"
+                                style={{
+                                    left: `${playheadPct}%`,
+                                    top: "-20px",
+                                    transform: "translateX(-50%)",
+                                    pointerEvents: "all",
+                                    cursor: dragMode === "playhead" ? "grabbing" : "grab",
+                                    userSelect: "none",
+                                }}
+                                onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    setDragMode("playhead");
+                                    dragModeRef.current = "playhead";
+                                    isDraggingRef.current = true;
+                                    if (timelineRef.current) {
+                                        const rect = timelineRef.current.getBoundingClientRect();
+                                        const pct = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
+                                        setPlayheadDragPos(pct);
+                                    }
+                                }}
+                            >
+                                <PlayheadHandle dragging={dragMode === "playhead"} />
+                            </div>
+                        </div>
+                    )}
+
                     <div
                         ref={timelineRef}
-                        className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer shadow-inner overflow-visible"
+                        className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer shadow-inner overflow-hidden"
                         onMouseMove={handleTimelineMouseMove}
                         onMouseDown={handleTimelineMouseDown}
                         onMouseUp={handleTimelineMouseUp}
+                        onWheel={handleTimelineWheel}
                     >
+                        {/* Time ruler ticks — rendered at z-50 so they appear above bubbles */}
+                        {(() => {
+                            const ticks: React.ReactNode[] = [];
+                            const rawStep = visRange / 6;
+                            const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+                            const nicedStep = Math.max(Math.ceil(rawStep / magnitude) * magnitude, 0.5);
+                            const firstTick = Math.ceil(visStart / nicedStep) * nicedStep;
+                            for (let t = firstTick; t <= visEnd + 0.001; t += nicedStep) {
+                                const pct = timeToPct(t);
+                                if (pct < 0 || pct > 100) continue;
+                                ticks.push(
+                                    <div key={t} className="absolute top-0 bottom-0 z-50 pointer-events-none" style={{ left: `${pct}%` }}>
+                                        <div className="absolute bottom-0 w-px h-2 bg-black/30 dark:bg-white/30" />
+                                        <span
+                                            className="absolute bottom-3 text-[9px] font-mono select-none -translate-x-1/2 px-0.5 rounded"
+                                            style={{
+                                                color: "rgba(0,0,0,0.7)",
+                                                background: "rgba(255,255,255,0.7)",
+                                                backdropFilter: "blur(2px)",
+                                            }}
+                                        >
+                                            {formatTime(t)}
+                                        </span>
+                                    </div>
+                                );
+                            }
+                            return ticks;
+                        })()}
+
                         {/* Playhead line */}
                         <div
                             className="absolute top-0 bottom-0 z-30 w-0.5 bg-red-500 pointer-events-none"
                             style={{ left: `${playheadPct}%` }}
                         />
-
-                        {/* Draggable handle */}
-                        <div
-                            className="absolute z-40"
-                            style={{
-                                left: `${playheadPct}%`,
-                                top: "-24px",
-                                transform: "translateX(-50%)",
-                                pointerEvents: "all",
-                                cursor: dragMode === "playhead" ? "grabbing" : "grab",
-                                userSelect: "none",
-                            }}
-                            onMouseDown={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                setDragMode("playhead");
-                                dragModeRef.current = "playhead";
-                                isDraggingRef.current = true;
-                                if (timelineRef.current) {
-                                    const rect = timelineRef.current.getBoundingClientRect();
-                                    const pct = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
-                                    setPlayheadDragPos(pct);
-                                }
-                            }}
-                        >
-                            <PlayheadHandle dragging={dragMode === "playhead"} />
-                        </div>
 
                         {regions.map((r) => {
                             const selected = selectedRegionIds.has(r.id);
@@ -926,21 +1145,29 @@ export default function BriformCanvas({
                             return (
                                 <div
                                     key={r.id}
-                                    className={`absolute rounded-md border px-2 flex items-center justify-center z-20 select-none transition-colors ${
-                                        isParent
-                                            ? selected
-                                                ? "bg-purple-600 text-white border-purple-300 shadow-md"
-                                                : "bg-purple-500/80 text-white border-purple-400/50 shadow-sm hover:bg-purple-500"
-                                            : selected
-                                            ? "bg-blue-600 text-white border-blue-300 shadow-md"
-                                            : "bg-blue-500/90 text-white border-blue-400/50 shadow-sm hover:bg-blue-500"
-                                    }`}
-                                    style={{
-                                        bottom: `${layer * 48 + 8}px`,
-                                        height: `40px`,
-                                        left: `${duration ? (r.start / duration) * 100 : 0}%`,
-                                        width: `${duration ? ((r.end - r.start) / duration) * 100 : 0}%`,
-                                    }}
+                                    className="absolute rounded-md border px-2 flex items-center justify-center z-20 select-none transition-colors text-white shadow-sm"
+                                    style={(() => {
+                                        // Resolve color: use bubble's stored color, or default blue/purple
+                                        const palette = r.color
+                                            ? COLOR_PALETTE.find((p) => p.base === r.color)
+                                            : isParent
+                                            ? COLOR_PALETTE[1] // purple default for parents
+                                            : COLOR_PALETTE[0]; // blue default for leaves
+                                        const base = palette?.base ?? (isParent ? "#a855f7" : "#3b82f6");
+                                        const sel  = palette?.selected ?? (isParent ? "#9333ea" : "#2563eb");
+                                        const bdr  = palette?.border ?? (isParent ? "#d8b4fe" : "#93c5fd");
+                                        return {
+                                            bottom: `${layer * 48 + 8}px`,
+                                            height: `40px`,
+                                            // Clamp bubble to the visible zoom window so it clips at the edge
+                                            left: `${Math.max(0, timeToPct(r.start))}%`,
+                                            width: `${((Math.min(r.end, visEnd) - Math.max(r.start, visStart)) / visRange) * 100}%`,
+                                            display: r.end <= visStart || r.start >= visEnd ? "none" : undefined,
+                                            backgroundColor: selected ? sel : base,
+                                            borderColor: selected ? bdr : `${bdr}80`,
+                                            boxShadow: selected ? `0 0 0 2px ${bdr}` : undefined,
+                                        };
+                                    })()}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedRegionIds((prev) => {
@@ -963,6 +1190,7 @@ export default function BriformCanvas({
                                                 prev.map((x) => (x.id === r.id ? { ...x, label } : x))
                                             );
                                         }
+                                        playerRef.current?.playVideo();
                                     }}
                                     onContextMenu={(e) => {
                                         e.preventDefault();
@@ -996,7 +1224,33 @@ export default function BriformCanvas({
                 {groupHint && <span className="text-amber-500 dark:text-amber-400">{groupHint}</span>}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2 items-center justify-center border-t dark:border-gray-700 pt-4">
+            {/* Color picker — always visible; swatches dim when nothing is selected */}
+            <div className="mt-2 flex items-center gap-2 flex-wrap min-h-[28px]" onClick={(e) => e.stopPropagation()}>
+                <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">Color:</span>
+                {COLOR_PALETTE.map((p) => {
+                    const hasSelection = selectedRegionIds.size > 0;
+                    const allMatch = hasSelection && selectedRegions.every((r) => r.color === p.base);
+                    return (
+                        <button
+                            key={p.name}
+                            title={p.name}
+                            onClick={() => handleColorChange(p.base)}
+                            disabled={!hasSelection}
+                            className="w-6 h-6 rounded-full focus:outline-none transition-all"
+                            style={{
+                                backgroundColor: p.base,
+                                opacity: hasSelection ? 1 : 0.35,
+                                border: allMatch ? `3px solid white` : `2px solid transparent`,
+                                boxShadow: allMatch ? `0 0 0 2px ${p.base}` : undefined,
+                                transform: allMatch ? "scale(1.15)" : "scale(1)",
+                                cursor: hasSelection ? "pointer" : "default",
+                            }}
+                        />
+                    );
+                })}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2 items-center justify-center border-t dark:border-gray-700 pt-4" onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => skip(-5)} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">-5s</button>
                 <button onClick={togglePlay} className="px-6 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold w-24">
                     {isPlaying ? "Pause" : "Play"}
@@ -1042,6 +1296,34 @@ export default function BriformCanvas({
                     ↪ Redo
                 </button>
                 <button onClick={handleClear} className="px-3 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">Clear</button>
+
+                <div className="w-px h-6 bg-gray-300 mx-2" />
+
+                {/* Zoom controls */}
+                <button
+                    onClick={handleZoomIn}
+                    disabled={visRange <= MIN_ZOOM_RANGE + 0.1}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed font-mono text-sm"
+                    title="Zoom in"
+                >
+                    🔍+
+                </button>
+                <button
+                    onClick={handleZoomOut}
+                    disabled={visRange >= duration}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed font-mono text-sm"
+                    title="Zoom out"
+                >
+                    🔍−
+                </button>
+                <button
+                    onClick={handleZoomReset}
+                    disabled={zoomStart === 0 && (zoomEnd === duration || zoomEnd === 0)}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                    title="Reset zoom"
+                >
+                    Reset Zoom
+                </button>
             </div>
         </section>
     );
