@@ -1,5 +1,6 @@
 # music-app/src/app/(sts)/scripts/main.py
 import os
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import tempfile
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +10,12 @@ import yt_dlp
 from basic_pitch.inference import predict_and_save
 from basic_pitch import ICASSP_2022_MODEL_PATH
 import traceback
+
+# To create a virtual environment and install dependencies, run:
+# python3.10 -m venv venv
+# source venv/bin/activate
+# pip install fastapi uvicorn yt-dlp basic_pitch deno
+# pip install setuptools "scikit-learn<=1.5.1" "basic-pitch[tf]" "tensorflow<2.16"
 
 app = FastAPI()
 
