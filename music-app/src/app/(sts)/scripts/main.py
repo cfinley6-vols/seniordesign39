@@ -15,7 +15,9 @@ import traceback
 # python3.10 -m venv venv
 # source venv/bin/activate
 # pip install fastapi uvicorn yt-dlp basic_pitch deno
-# pip install setuptools "scikit-learn<=1.5.1" "basic-pitch[tf]" "tensorflow<2.16"
+# pip install setuptools "scikit-learn<=1.5.1" "basic-pitch[tf]" "tensorflow==2.13.0"
+# pip install "fastapi==0.103.2" "pydantic==1.10.13"
+# pip install setuptools
 
 app = FastAPI()
 
