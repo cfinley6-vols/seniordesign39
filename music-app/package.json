@@ -36,5 +36,9 @@
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "minimist": "^1.2.8",
+    "static-eval": "^2.1.0"
   }
 }

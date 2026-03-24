@@ -38,37 +38,37 @@ def main():
         os.makedirs(output_dir, exist_ok=True)
         
         # Create a secure temporary directory for the downloading/processing phase
-        temp_dir = os.path.join(script_dir, "audio")
+        with tempfile.TemporaryDirectory() as temp_dir:
             
-        # Download
-        wav_path = download_audio(args.url, temp_dir)
-        
-        # Transcribe
-        predict_and_save(
-            audio_path_list=[wav_path],
-            output_directory=temp_dir,
-            save_midi=True,
-            sonify_midi=False,
-            save_model_outputs=False,
-            save_notes=False,
-            model_or_model_path=ICASSP_2022_MODEL_PATH
-        )
-        
-        generated_midi = os.path.join(temp_dir, 'audio_basic_pitch.mid')
-        
-        if not os.path.exists(generated_midi):
-            raise Exception("MIDI generation failed inside basic_pitch.")
-        
-        # Move the finished file from the temp folder to our permanent outputs folder
-        final_path = os.path.join(output_dir, "transcription.mid")
-        
-        if os.path.exists(final_path):
-            os.remove(final_path) # Overwrite the old one if it exists
+            # Download
+            wav_path = download_audio(args.url, temp_dir)
             
-        shutil.move(generated_midi, final_path)
-        
-        # 2. THE MOST IMPORTANT PART: Print the exact path for Next.js to read
-        print(f"SUCCESS:{final_path}")
+            # Transcribe
+            predict_and_save(
+                audio_path_list=[wav_path],
+                output_directory=temp_dir,
+                save_midi=True,
+                sonify_midi=False,
+                save_model_outputs=False,
+                save_notes=False,
+                model_or_model_path=ICASSP_2022_MODEL_PATH
+            )
+            
+            generated_midi = os.path.join(temp_dir, 'audio_basic_pitch.mid')
+            
+            if not os.path.exists(generated_midi):
+                raise Exception("MIDI generation failed inside basic_pitch.")
+            
+            # Move the finished file from the temp folder to our permanent outputs folder
+            final_path = os.path.join(output_dir, "transcription.mid")
+            
+            if os.path.exists(final_path):
+                os.remove(final_path) # Overwrite the old one if it exists
+                
+            shutil.move(generated_midi, final_path)
+            
+            # 2. THE MOST IMPORTANT PART: Print the exact path for Next.js to read
+            print(f"SUCCESS:{final_path}")
             
     except Exception as e:
         # If it crashes, print ERROR so Next.js knows to tell the user
