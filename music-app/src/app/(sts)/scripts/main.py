@@ -1,37 +1,14 @@
 # music-app/src/app/(sts)/scripts/main.py
+# music-app/src/app/(sts)/scripts/main.py
 import os
-os.environ["TF_USE_LEGACY_KERAS"] = "1"
+import sys
 import tempfile
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+import shutil
+import argparse
 import yt_dlp
+import traceback
 from basic_pitch.inference import predict_and_save
 from basic_pitch import ICASSP_2022_MODEL_PATH
-import traceback
-
-# To create a virtual environment and install dependencies, run:
-# python3.10 -m venv venv
-# source venv/bin/activate
-# pip install fastapi uvicorn yt-dlp basic_pitch deno
-# pip install setuptools "scikit-learn<=1.5.1" "basic-pitch[tf]" "tensorflow==2.13.0"
-# pip install "fastapi==0.103.2" "pydantic==1.10.13"
-# pip install setuptools
-
-app = FastAPI()
-
-# Allow Next.js to talk to this API
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-class YouTubeRequest(BaseModel):
-    url: str
 
 def download_audio(url: str, output_dir: str) -> str:
     ydl_opts = {
@@ -42,22 +19,29 @@ def download_audio(url: str, output_dir: str) -> str:
             'preferredcodec': 'wav',
             'preferredquality': '192',
         }],
-        'quiet': True,
+        'quiet': True, # Keeps the terminal clean so Next.js doesn't get confused
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
     return os.path.join(output_dir, 'audio.wav')
 
-# Note: Using 'def' instead of 'async def' so FastAPI runs this in a threadpool, 
-# preventing the heavy ML task from blocking the server.
-# Currently does not function as designed
-@app.post("/api/convert")
-def convert_to_midi(request: YouTubeRequest):
+def main():
+    # 1. Set up the terminal command arguments
+    parser = argparse.ArgumentParser(description="Convert YouTube audio to MIDI.")
+    parser.add_argument("url", help="The YouTube URL to convert")
+    args = parser.parse_args()
+
     try:
-        temp_dir = "./audio"
+        # We'll save the final output in a dedicated 'outputs' folder next to this script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(script_dir, "audio")
+        os.makedirs(output_dir, exist_ok=True)
         
+        # Create a secure temporary directory for the downloading/processing phase
+        temp_dir = os.path.join(script_dir, "audio")
+            
         # Download
-        wav_path = download_audio(request.url, temp_dir)
+        wav_path = download_audio(args.url, temp_dir)
         
         # Transcribe
         predict_and_save(
@@ -70,23 +54,29 @@ def convert_to_midi(request: YouTubeRequest):
             model_or_model_path=ICASSP_2022_MODEL_PATH
         )
         
-        # Basic pitch names the output like this:
         generated_midi = os.path.join(temp_dir, 'audio_basic_pitch.mid')
         
         if not os.path.exists(generated_midi):
-            raise Exception("MIDI generation failed.")
-            
-        return FileResponse(
-            path=generated_midi, 
-            media_type='audio/midi', 
-            filename="transcription.mid"
-        )
+            raise Exception("MIDI generation failed inside basic_pitch.")
         
+        # Move the finished file from the temp folder to our permanent outputs folder
+        final_path = os.path.join(output_dir, "transcription.mid")
+        
+        if os.path.exists(final_path):
+            os.remove(final_path) # Overwrite the old one if it exists
+            
+        shutil.move(generated_midi, final_path)
+        
+        # 2. THE MOST IMPORTANT PART: Print the exact path for Next.js to read
+        print(f"SUCCESS:{final_path}")
+            
     except Exception as e:
-        print("\n" + "="*50)
-        print("PYTHON CRASH LOG")
-        traceback.print_exc() 
-        print("="*50 + "\n")
-        raise HTTPException(status_code=500, detail=str(e))
-    
+        # If it crashes, print ERROR so Next.js knows to tell the user
+        print(f"ERROR:{str(e)}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+        
 # uvicorn main:app --reload
