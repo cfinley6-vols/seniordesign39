@@ -15,10 +15,15 @@
 
 # Requirements
 npm install @supabase/supabase-js @supabase/ssr zod
+
 npm install html-midi-player
 
+npm install @tonejs/midi
+
 python3.10 -m venv venv
+
 source venv/bin/activate -OR- .\venv\Scripts\activate
+
 pip install fastapi==0.110.0 uvicorn==0.28.0 yt-dlp==2024.03.10 basic-pitch==0.3.0
 
 # NetIDs
