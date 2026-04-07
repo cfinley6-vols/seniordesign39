@@ -101,14 +101,6 @@ const fullSync = (regions: Region[], duration: number): Region[] =>
  * cascadeDeleteGroups: when a bubble is deleted (or squeezed out), walk UP the
  * parent chain from each affected bubble to find the topmost ancestor, then
  * delete top-down so that each removal cascades correctly through the hierarchy.
- *
- * Algorithm:
- * 1. Find every group that now has < 2 children.
- * 2. For each such group, walk up to its topmost ancestor (a group with no parent,
- *    or whose parent is not also being deleted).
- * 3. Sort the groups to delete by layer descending (highest first).
- * 4. Delete them one layer at a time, orphaning children after each pass.
- * 5. Repeat until no more under-populated groups remain.
  */
 const cascadeDeleteGroups = (regions: Region[]): Region[] => {
     let current = [...regions];
@@ -117,7 +109,6 @@ const cascadeDeleteGroups = (regions: Region[]): Region[] => {
     while (changed) {
         changed = false;
 
-        // Find all groups with fewer than 2 children
         const underPopulated = current.filter((r) => {
             const isParent = current.some((c) => c.parentId === r.id);
             if (!isParent) return false;
@@ -126,7 +117,6 @@ const cascadeDeleteGroups = (regions: Region[]): Region[] => {
 
         if (underPopulated.length === 0) break;
 
-        // Walk up to find topmost ancestor for each under-populated group
         const getAncestorChain = (id: string): string[] => {
             const chain: string[] = [id];
             let r = current.find((x) => x.id === id);
@@ -136,35 +126,30 @@ const cascadeDeleteGroups = (regions: Region[]): Region[] => {
                 chain.push(parent.id);
                 r = parent;
             }
-            return chain; // [self, parent, grandparent, ...]
+            return chain;
         };
 
-        // Collect all IDs that should be deleted (the under-populated ones + any ancestor
-        // that would also become under-populated once its child is gone)
         const toDeleteIds = new Set<string>();
         for (const g of underPopulated) {
-            // Walk up — if removing g would leave g's parent with < 2 children, delete parent too
             const chain = getAncestorChain(g.id);
             for (const id of chain) {
                 const parent = current.find((x) => x.id === id);
                 if (!parent) continue;
                 const childCount = current.filter((c) => c.parentId === id).length;
-                // This group has < 2 children (or will once its child is deleted)
                 if (childCount < 2) {
                     toDeleteIds.add(id);
                 } else {
-                    break; // ancestor is still healthy — stop walking up
+                    break;
                 }
             }
         }
 
         if (toDeleteIds.size === 0) break;
 
-        // Delete highest layer first (top-down)
         const sortedToDelete = [...toDeleteIds].sort((a, b) => {
             const layerA = current.find((r) => r.id === a)?.layer || 0;
             const layerB = current.find((r) => r.id === b)?.layer || 0;
-            return layerB - layerA; // descending
+            return layerB - layerA;
         });
 
         for (const id of sortedToDelete) {
@@ -181,11 +166,6 @@ const cascadeDeleteGroups = (regions: Region[]): Region[] => {
 
 /**
  * applyResizeWithNeighbor: resize the active bubble, pushing or consuming neighbors.
- *
- * Fast-drag fix: neighbor lookup uses the SORTED POSITION in the layer array
- * rather than proximity to active.end/active.start. This means even if the mouse
- * skipped over a bubble in one frame, we still find it by sorted order and consume
- * everything between the active bubble and the target position correctly.
  */
 function applyResizeWithNeighbor(
     regions: Region[],
@@ -197,7 +177,6 @@ function applyResizeWithNeighbor(
     const layer = regions.find((r) => r.id === activeId)?.layer || 0;
     let updated = regions.map((r) => ({ ...r }));
 
-    // Always re-derive sorted layer from updated so deletions are reflected
     const getSortedLayer = () =>
         updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
 
@@ -213,9 +192,7 @@ function applyResizeWithNeighbor(
 
         const target = clamp(t, 0, duration);
 
-        // Drag-to-zero: active bubble itself shrinks away
         if (target <= active.start + MIN_WIDTH && layer !== 0) {
-            // Give its space to the left neighbor (if any)
             const leftNeighbor = activeIdx > 0 ? layerSorted[activeIdx - 1] : null;
             updated = updated.filter((r) => r.id !== activeId);
             if (leftNeighbor) {
@@ -226,9 +203,6 @@ function applyResizeWithNeighbor(
         }
 
         const clampedTarget = clamp(target, active.start + MIN_WIDTH, duration);
-
-        // All bubbles to the RIGHT of the active bubble in sorted order
-        // Using sorted index instead of proximity — immune to fast-drag gaps
         const bubblesToRight = layerSorted.slice(activeIdx + 1);
 
         if (bubblesToRight.length === 0) {
@@ -238,11 +212,9 @@ function applyResizeWithNeighbor(
             const toDelete: string[] = [];
             for (const neighbor of bubblesToRight) {
                 if (cursor >= neighbor.end - MIN_WIDTH) {
-                    // Fully consume this neighbor
                     toDelete.push(neighbor.id);
                     cursor = neighbor.end;
                 } else if (cursor > neighbor.start) {
-                    // Partially overlap — push neighbor right
                     updated.find((r) => r.id === neighbor.id)!.start = cursor;
                     break;
                 } else {
@@ -252,20 +224,17 @@ function applyResizeWithNeighbor(
             updated = updated.filter((r) => !toDelete.includes(r.id));
             const a = updated.find((r) => r.id === activeId)!;
             a.end = cursor > clampedTarget ? cursor : clampedTarget;
-            // Force flush with the immediate right neighbor
             const newSorted = updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
             const newActiveIdx = newSorted.findIndex((r) => r.id === activeId);
             const immediateRight = newActiveIdx < newSorted.length - 1 ? newSorted[newActiveIdx + 1] : null;
             if (immediateRight && immediateRight.start !== a.end) immediateRight.start = a.end;
         }
     } else {
-        // resize-start
         const isLeftmost = activeIdx === 0;
         if (isLeftmost) return regions;
 
         const target = clamp(t, 0, duration);
 
-        // Drag-to-zero: active bubble shrinks away
         if (target >= active.end - MIN_WIDTH && layer !== 0) {
             const rightNeighbor = activeIdx < layerSorted.length - 1 ? layerSorted[activeIdx + 1] : null;
             updated = updated.filter((r) => r.id !== activeId);
@@ -277,8 +246,6 @@ function applyResizeWithNeighbor(
         }
 
         const clampedTarget = clamp(target, 0, active.end - MIN_WIDTH);
-
-        // All bubbles to the LEFT in sorted order — reversed so nearest-first
         const bubblesToLeft = layerSorted.slice(0, activeIdx).reverse();
 
         if (bubblesToLeft.length === 0) {
@@ -288,11 +255,9 @@ function applyResizeWithNeighbor(
             const toDelete: string[] = [];
             for (const neighbor of bubblesToLeft) {
                 if (cursor <= neighbor.start + MIN_WIDTH) {
-                    // Fully consume this neighbor
                     toDelete.push(neighbor.id);
                     cursor = neighbor.start;
                 } else if (cursor < neighbor.end) {
-                    // Partially overlap — push neighbor left
                     updated.find((r) => r.id === neighbor.id)!.end = cursor;
                     break;
                 } else {
@@ -302,7 +267,6 @@ function applyResizeWithNeighbor(
             updated = updated.filter((r) => !toDelete.includes(r.id));
             const a = updated.find((r) => r.id === activeId)!;
             a.start = cursor < clampedTarget ? cursor : clampedTarget;
-            // Force flush with the immediate left neighbor
             const newSorted = updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
             const newActiveIdx = newSorted.findIndex((r) => r.id === activeId);
             const immediateLeft = newActiveIdx > 0 ? newSorted[newActiveIdx - 1] : null;
@@ -314,12 +278,23 @@ function applyResizeWithNeighbor(
     return fullSync(updated, duration);
 }
 
+// SVG dimensions — keep in sync with PlayheadHandle viewBox
+const PLAYHEAD_SVG_W = 12;
+const PLAYHEAD_SVG_H = 26;
+// The triangle point (tip) is at y=25 in a 26-tall SVG, i.e. 1px from the bottom.
+// We want the tip to sit exactly on top of the red line at the top of the timeline.
+// PLAYHEAD_OFFSET_Y: how many px above the timeline top edge the handle sits.
+// tip_y_in_svg = 25, so the tip is (SVG_H - 25) = 1px from the SVG bottom.
+// We want the SVG bottom - 1px to be flush with the timeline top, so offset = SVG_H - 1.
+const PLAYHEAD_TIP_FROM_BOTTOM = PLAYHEAD_SVG_H - 25; // 1px
+const PLAYHEAD_OFFSET_Y = PLAYHEAD_SVG_H - PLAYHEAD_TIP_FROM_BOTTOM; // = 25px above timeline top
+
 function PlayheadHandle({ dragging }: { dragging: boolean }) {
     return (
         <svg
-            width="12"
-            height="26"
-            viewBox="0 0 12 26"
+            width={PLAYHEAD_SVG_W}
+            height={PLAYHEAD_SVG_H}
+            viewBox={`0 0 ${PLAYHEAD_SVG_W} ${PLAYHEAD_SVG_H}`}
             style={{ display: "block", filter: dragging ? "brightness(0.8)" : "none" }}
         >
             <rect x="1" y="1" width="10" height="16" rx="2" ry="2" fill="#ef4444" stroke="#fca5a5" strokeWidth="0.75" />
@@ -360,8 +335,6 @@ export default function BriformCanvas({
     const lastSeekPctRef = useRef<number | null>(null);
 
     // confirmedTimeRef: the best known playback position for split operations.
-    // Updated by live playback (small increments) AND explicitly on playhead drag release.
-    // This prevents splitting at a stale paused position after the user drags the playhead.
     const confirmedTimeRef = useRef<number>(0);
 
     const historyRef = useRef<Region[][]>([]);
@@ -372,11 +345,8 @@ export default function BriformCanvas({
     const dragModeRef = useRef<DragMode>("none");
     const durationRef = useRef(duration);
     const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Refs for zoom so the global mouseup closure always sees current values
     const zoomStartRef = useRef(0);
     const zoomEndRef = useRef(0);
-    // Keep a ref to playerRef.current so the global mouseup closure always sees
-    // the latest player instance without needing to re-register the listener.
     const playerInstanceRef = useRef<any>(null);
     const isPlayingRef = useRef(isPlaying);
     const togglePlayRef = useRef(togglePlay);
@@ -384,20 +354,16 @@ export default function BriformCanvas({
     useEffect(() => { dragModeRef.current = dragMode; }, [dragMode]);
     useEffect(() => {
         durationRef.current = duration;
-        // When duration becomes known and zoom is unset, initialise to full view
         if (duration > 0) {
             setZoomEnd((prev) => prev === 0 ? duration : prev);
         }
     }, [duration]);
-    useEffect(() => { playerInstanceRef.current = playerRef?.current ?? null; }, );
+    useEffect(() => { playerInstanceRef.current = playerRef?.current ?? null; });
     useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
     useEffect(() => { togglePlayRef.current = togglePlay; }, [togglePlay]);
     useEffect(() => { zoomStartRef.current = zoomStart; }, [zoomStart]);
     useEffect(() => { zoomEndRef.current = zoomEnd; }, [zoomEnd]);
 
-    // Update confirmedTimeRef for live playback (small incremental steps only).
-    // Large jumps (>1s) are skips/buffering — don't trust them here;
-    // playhead drag releases set confirmedTimeRef directly instead.
     const prevCurrentTimeRef = useRef(currentTime);
     useEffect(() => {
         const delta = Math.abs(currentTime - prevCurrentTimeRef.current);
@@ -407,7 +373,6 @@ export default function BriformCanvas({
         prevCurrentTimeRef.current = currentTime;
     }, [currentTime]);
 
-    // Clear lastSeekPctRef once currentTime has caught up
     useEffect(() => {
         if (lastSeekPctRef.current === null || duration <= 0) return;
         const currentPct = (currentTime / duration) * 100;
@@ -416,17 +381,7 @@ export default function BriformCanvas({
         }
     }, [currentTime, duration]);
 
-    // Auto-pan: smoothly follow the playhead while it is playing.
-    //
-    // While playing, we keep the playhead pinned at PLAYHEAD_ANCHOR (20% from left).
-    // The window moves every currentTime tick to maintain that anchor position,
-    // so the playhead appears stationary and the timeline scrolls under it — smooth,
-    // no jumps.
-    //
-    // While NOT playing (paused/seeking), we do NOT auto-pan. The user is in control
-    // and the window should stay wherever they left it. We only snap if the playhead
-    // is completely outside the window after a seek.
-    const PLAYHEAD_ANCHOR = 0.2; // playhead sits at 20% from the left while playing
+    const PLAYHEAD_ANCHOR = 0.2;
     const isPlayingRef2 = useRef(isPlaying);
     useEffect(() => { isPlayingRef2.current = isPlaying; }, [isPlaying]);
 
@@ -436,23 +391,18 @@ export default function BriformCanvas({
         const end = zoomEndRef.current > 0 ? zoomEndRef.current : duration;
         const range = end - start;
 
-        // Only auto-pan when zoomed in
         if (range >= duration - 0.1) return;
 
         const t = currentTime;
 
         if (isPlayingRef2.current) {
-            // PLAYING: keep playhead at fixed anchor position within the window.
-            // newStart is wherever puts `t` at PLAYHEAD_ANCHOR fraction of range.
             const newStart = clamp(t - range * PLAYHEAD_ANCHOR, 0, duration - range);
             const newEnd = newStart + range;
-            // Only update if the window actually needs to move (avoids redundant renders)
             if (Math.abs(newStart - start) > 0.01) {
                 setZoomStart(newStart);
                 setZoomEnd(newEnd);
             }
         } else {
-            // PAUSED / SEEKING: only snap if playhead is completely outside the window
             if (t < start) {
                 const newStart = clamp(t - range * 0.2, 0, duration - range);
                 setZoomStart(newStart);
@@ -465,7 +415,7 @@ export default function BriformCanvas({
         }
     }, [currentTime, duration]);
 
-    // Effective zoom window — must be computed before playheadPct uses timeToPct
+    // Effective zoom window
     const visStart = zoomStart;
     const visEnd = zoomEnd > 0 ? zoomEnd : duration;
     const visRange = Math.max(visEnd - visStart, 0.1);
@@ -473,15 +423,11 @@ export default function BriformCanvas({
 
     const playheadPct = (() => {
         if (playheadDragPos !== null) return playheadDragPos;
-        // lastSeekPctRef is stored as a zoom-relative pct already when dragging
         if (lastSeekPctRef.current !== null) return lastSeekPctRef.current;
         return timeToPct(currentTime);
     })();
 
     // --- Seed / missing-bubble guard ---
-    // Watches for absence of any layer-0 bubble whenever duration is known.
-    // A 400ms debounce lets the parent finish loading DB data before deciding
-    // the project is genuinely empty and needs a default bubble inserted.
     const seedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
         if (seedTimerRef.current) clearTimeout(seedTimerRef.current);
@@ -508,19 +454,21 @@ export default function BriformCanvas({
             if (!timelineRef.current || durationRef.current <= 0) return { pct: null, t: null };
             const rect = timelineRef.current.getBoundingClientRect();
             const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
-            // Map into zoom window — visStart/visEnd captured via closure from component scope
             const currentVisStart = zoomStartRef.current;
             const currentVisEnd = zoomEndRef.current > 0 ? zoomEndRef.current : durationRef.current;
             const currentVisRange = Math.max(currentVisEnd - currentVisStart, 0.1);
             const t = clamp(currentVisStart + ratio * currentVisRange, 0, durationRef.current);
-            const pct = ratio * 100; // percentage across visible window
+            const pct = ratio * 100;
             return { pct, t };
         };
 
         const onGlobalMouseMove = (e: MouseEvent) => {
             if (dragModeRef.current !== "playhead") return;
-            const { pct } = getTimeAndPct(e.clientX);
-            if (pct !== null) setPlayheadDragPos(pct);
+            // FIX: use timelineRef for accurate pct so handle stays aligned with red line
+            if (!timelineRef.current) return;
+            const rect = timelineRef.current.getBoundingClientRect();
+            const ratio = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+            setPlayheadDragPos(ratio * 100);
         };
 
         const onGlobalMouseUp = (e: MouseEvent) => {
@@ -528,8 +476,6 @@ export default function BriformCanvas({
                 const { pct, t } = getTimeAndPct(e.clientX);
                 if (pct !== null) lastSeekPctRef.current = pct;
 
-                // KEY FIX: immediately update confirmedTimeRef to the dragged-to position
-                // so that Split uses the new position, not wherever the video was paused before.
                 if (t !== null) confirmedTimeRef.current = t;
 
                 setPlayheadDragPos(null);
@@ -542,15 +488,11 @@ export default function BriformCanvas({
 
                 if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
                 pauseTimerRef.current = setTimeout(() => {
-                    // Use playerInstanceRef so we always get the current player,
-                    // not a stale closure value from when the effect first ran.
                     const player = playerInstanceRef.current;
                     const state = player?.getPlayerState?.();
-                    // Pause if playing (1) or buffering (3)
                     if (state === 1 || state === 3) {
                         player?.pauseVideo?.();
                     } else if (isPlayingRef.current) {
-                        // Fallback: if parent thinks it's playing, use togglePlay
                         togglePlayRef.current?.();
                     }
                 }, 250);
@@ -631,19 +573,15 @@ export default function BriformCanvas({
             if (!timelineRef.current) return null;
             const rect = timelineRef.current.getBoundingClientRect();
             const ratio = (clientX - rect.left) / rect.width;
-            // Map pixel ratio into the zoom window
             return clamp(visStart + ratio * visRange, 0, duration || 1);
         },
         [duration, visStart, visRange]
     );
 
-    // Zoom helpers — all zoom operations center on the current playhead position
-    const MIN_ZOOM_RANGE = 10; // minimum 10 seconds visible
-    const MAX_ZOOM_RANGE = duration; // max = full duration
+    const MIN_ZOOM_RANGE = 10;
 
     const zoomAround = (anchor: number, newRange: number) => {
         const clamped = clamp(newRange, MIN_ZOOM_RANGE, duration);
-        // Center the window on anchor, clamped so we don't go past 0 or duration
         let newStart = anchor - clamped / 2;
         let newEnd = anchor + clamped / 2;
         if (newStart < 0) { newEnd = Math.min(duration, newEnd - newStart); newStart = 0; }
@@ -653,7 +591,7 @@ export default function BriformCanvas({
     };
 
     const handleZoomIn = () => {
-        const anchor = confirmedTimeRef.current; // center on current playhead
+        const anchor = confirmedTimeRef.current;
         zoomAround(anchor, visRange / 2);
     };
     const handleZoomOut = () => {
@@ -664,8 +602,6 @@ export default function BriformCanvas({
         setZoomStart(0);
         setZoomEnd(duration);
     };
-    // Pan by scrolling inside the timeline — also wired as a native non-passive
-    // listener (see useEffect below) so e.preventDefault() actually blocks page scroll.
     const handleTimelineWheel = (e: React.WheelEvent<HTMLDivElement>) => {
         e.preventDefault();
         if (duration <= 0) return;
@@ -676,7 +612,6 @@ export default function BriformCanvas({
         setZoomEnd(newEnd);
     };
 
-    // Attach a native non-passive wheel listener so preventDefault() stops page scroll
     useEffect(() => {
         const el = timelineRef.current;
         if (!el) return;
@@ -697,7 +632,6 @@ export default function BriformCanvas({
     // --- Actions ---
 
     const handleSplit = () => {
-        // Use confirmedTimeRef — reflects dragged position immediately, not buffering lag
         const t = confirmedTimeRef.current;
         const target = regions.find((r) => (r.layer || 0) === 0 && t > r.start && t < r.end);
         if (!target) { alert("Playhead must be inside a base layer bubble to split."); return; }
@@ -771,14 +705,11 @@ export default function BriformCanvas({
         if (ids.length < 2) { alert("Select at least 2 regions to group."); return; }
         const selected = regions.filter((r) => ids.includes(r.id));
 
-        // None of the selected bubbles can already have a parent
         if (selected.some((r) => r.parentId !== undefined)) {
             alert("One or more selected bubbles are already part of a group.");
             return;
         }
 
-        // Selected bubbles must form a contiguous time span (no gaps) when projected
-        // onto the timeline, regardless of which layers they are on.
         const sortedByStart = [...selected].sort((a, b) => a.start - b.start);
         for (let i = 0; i < sortedByStart.length - 1; i++) {
             const gap = sortedByStart[i + 1].start - sortedByStart[i].end;
@@ -791,11 +722,8 @@ export default function BriformCanvas({
         const start = Math.min(...selected.map((r) => r.start));
         const end = Math.max(...selected.map((r) => r.end));
 
-        // Place the new parent one layer above the highest selected bubble
         let targetLayer = Math.max(...selected.map((r) => r.layer || 0)) + 1;
 
-        // Bump up if something already occupies that layer in the same time range
-        // (excluding the selected bubbles themselves)
         while (
             regions.some(
                 (r) => !ids.includes(r.id) && (r.layer || 0) === targetLayer && start < r.end && end > r.start
@@ -818,17 +746,12 @@ export default function BriformCanvas({
         if (!target || (target.layer || 0) === 0) return;
 
         setRegionsWithHistory(regions, (prev) => {
-            // Walk UP the parent chain from the deleted bubble to collect all
-            // ancestors that would become under-populated (< 2 children) after
-            // this deletion. Collect them ordered bottom-up so we can delete
-            // top-down (highest layer first) afterwards.
             const walkUp = (startId: string, list: Region[]): string[] => {
                 const ids: string[] = [startId];
                 let current = list.find((r) => r.id === startId);
                 while (current?.parentId) {
                     const parent = list.find((r) => r.id === current!.parentId);
                     if (!parent) break;
-                    // Count how many children parent STILL has after removing `startId` branch
                     const remaining = list.filter(
                         (r) => r.parentId === parent.id && !ids.includes(r.id)
                     ).length;
@@ -836,7 +759,7 @@ export default function BriformCanvas({
                         ids.push(parent.id);
                         current = parent;
                     } else {
-                        break; // parent still has enough children — stop
+                        break;
                     }
                 }
                 return ids;
@@ -844,7 +767,6 @@ export default function BriformCanvas({
 
             const chainToDelete = walkUp(id, prev);
 
-            // Sort highest layer first so we delete top-down
             chainToDelete.sort((a, b) => {
                 const la = prev.find((r) => r.id === a)?.layer || 0;
                 const lb = prev.find((r) => r.id === b)?.layer || 0;
@@ -953,13 +875,10 @@ export default function BriformCanvas({
             const t = timeFromClient(e.clientX);
             if (t !== null) {
                 seekTo(t);
-                // Also update confirmedTimeRef so Split uses this new position immediately
                 confirmedTimeRef.current = t;
             }
         }
 
-        // --- DRAG-TO-DELETE: remove a non-layer-0 bubble if dragged into empty space ---
-        // To revert: delete this entire block (from here to END DRAG-TO-DELETE)
         if (isDraggingRef.current && dragMode === "move" && activeRegionId !== null) {
             const active = regions.find((r) => r.id === activeRegionId);
             if (active && (active.layer || 0) !== 0) {
@@ -980,7 +899,6 @@ export default function BriformCanvas({
                 }
             }
         }
-        // END DRAG-TO-DELETE
     };
 
     const startDrag = (id: string, mode: DragMode) => {
@@ -995,18 +913,33 @@ export default function BriformCanvas({
     const formatTime = (s: number) =>
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
+    // --- Group color inheritance ---
+    // Build a map: bubbleId -> outline color from its direct parent (one layer up only)
+    const parentOutlineColorMap = (() => {
+        const map = new Map<string, string>();
+        for (const region of regions) {
+            const isParent = regions.some((c) => c.parentId === region.id);
+            if (!isParent) continue;
+            // This region is a parent — its direct children get its color as an outline
+            const parentColor = region.color ?? COLOR_PALETTE[1].base; // default purple for parents
+            const children = regions.filter((c) => c.parentId === region.id);
+            for (const child of children) {
+                map.set(child.id, parentColor);
+            }
+        }
+        return map;
+    })();
+
     const maxLayer = regions.length > 0 ? Math.max(...regions.map((r) => r.layer || 0)) : 0;
     const containerHeightPx = 16 + (maxLayer + 1) * 48;
     const canUndo = historyRef.current.length > 0;
     const canRedo = redoRef.current.length > 0;
 
     const selectedRegions = regions.filter((r) => selectedRegionIds.has(r.id));
-    const selectedLayers = new Set(selectedRegions.map((r) => r.layer || 0));
     const alreadyGrouped = selectedRegions.some((r) => r.parentId !== undefined);
     const canGroup = (() => {
         if (selectedRegions.length < 2) return false;
         if (alreadyGrouped) return false;
-        // Check contiguity across all selected bubbles regardless of layer
         const sorted = [...selectedRegions].sort((a, b) => a.start - b.start);
         for (let i = 0; i < sorted.length - 1; i++) {
             if (sorted[i + 1].start - sorted[i].end > ADJACENCY_TOLERANCE) return false;
@@ -1055,22 +988,182 @@ export default function BriformCanvas({
                     className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-1 transition-all duration-300 overflow-visible"
                     style={{ height: `${containerHeightPx}px` }}
                 >
-                    {/* Playhead handle — outside the clipped timeline so it sticks up above.
-                         Only shown when the playhead is within the visible zoom window. */}
-                    {(playheadPct >= 0 && playheadPct <= 100) && (
-                        <div
-                            className="absolute z-40 pointer-events-none"
-                            style={{ inset: 0 }}
-                        >
+                    {/*
+                        PLAYHEAD HANDLE FIX:
+                        We now position the handle relative to timelineRef's coordinate space
+                        by placing it INSIDE the timeline div (via a portal-like absolute child
+                        that overflows upward). This ensures the handle's left% always maps to
+                        the same percentage as the red playhead line — no drift at extremes.
+
+                        The handle is placed with overflow:visible on the timeline, positioned
+                        at top: -PLAYHEAD_OFFSET_Y so the triangle tip lands exactly at y=0
+                        (the top of the timeline), flush with the red line origin.
+                    */}
+                    <div
+                        ref={timelineRef}
+                        className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer shadow-inner overflow-visible"
+                        onMouseMove={handleTimelineMouseMove}
+                        onMouseDown={handleTimelineMouseDown}
+                        onMouseUp={handleTimelineMouseUp}
+                        onWheel={handleTimelineWheel}
+                        style={{ overflow: "visible" }}
+                    >
+                        {/* Clip inner content — bubbles + ruler — without clipping playhead handle */}
+                        <div className="absolute inset-0 rounded overflow-hidden">
+                            {/* Time ruler ticks */}
+                            {(() => {
+                                const ticks: React.ReactNode[] = [];
+                                const rawStep = visRange / 6;
+                                const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+                                const nicedStep = Math.max(Math.ceil(rawStep / magnitude) * magnitude, 0.5);
+                                const firstTick = Math.ceil(visStart / nicedStep) * nicedStep;
+                                for (let t = firstTick; t <= visEnd + 0.001; t += nicedStep) {
+                                    const pct = timeToPct(t);
+                                    if (pct < 0 || pct > 100) continue;
+                                    ticks.push(
+                                        <div key={t} className="absolute top-0 bottom-0 z-50 pointer-events-none" style={{ left: `${pct}%` }}>
+                                            <div className="absolute bottom-0 w-px h-2 bg-black/30 dark:bg-white/30" />
+                                            <span
+                                                className="absolute bottom-3 text-[9px] font-mono select-none -translate-x-1/2 px-0.5 rounded"
+                                                style={{
+                                                    color: "rgba(0,0,0,0.7)",
+                                                    background: "rgba(255,255,255,0.7)",
+                                                    backdropFilter: "blur(2px)",
+                                                }}
+                                            >
+                                                {formatTime(t)}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+                                return ticks;
+                            })()}
+
+                            {/* Playhead line */}
                             <div
-                                className="absolute"
+                                className="absolute top-0 bottom-0 z-30 w-0.5 bg-red-500 pointer-events-none"
+                                style={{ left: `${playheadPct}%` }}
+                            />
+
+                            {regions.map((r) => {
+                                const selected = selectedRegionIds.has(r.id);
+                                const layer = r.layer || 0;
+                                const isParent = regions.some((c) => c.parentId === r.id);
+                                const isLayer0 = layer === 0;
+                                const layer0 = regions.filter((x) => (x.layer || 0) === 0);
+                                const isLeftBorder = isLayer0 && r.start === Math.min(...layer0.map((x) => x.start));
+                                const isRightBorder = isLayer0 && r.end === Math.max(...layer0.map((x) => x.end));
+
+                                // Determine outline color from parent (one level up only)
+                                const parentOutlineColor = parentOutlineColorMap.get(r.id);
+
+                                return (
+                                    <div
+                                        key={r.id}
+                                        className="absolute rounded-md px-2 flex items-center justify-center z-20 select-none transition-colors text-white shadow-sm"
+                                        style={(() => {
+                                            const palette = r.color
+                                                ? COLOR_PALETTE.find((p) => p.base === r.color)
+                                                : isParent
+                                                ? COLOR_PALETTE[1]
+                                                : COLOR_PALETTE[0];
+                                            const base = palette?.base ?? (isParent ? "#a855f7" : "#3b82f6");
+                                            const sel  = palette?.selected ?? (isParent ? "#9333ea" : "#2563eb");
+                                            const bdr  = palette?.border ?? (isParent ? "#d8b4fe" : "#93c5fd");
+
+                                            // Border logic:
+                                            // 1. If selected: use the bubble's own selection border + glow
+                                            // 2. Else if has a parent outline color: show parent's color as border (2px solid)
+                                            // 3. Else: default semi-transparent border
+                                            let borderStyle: React.CSSProperties = {};
+                                            if (selected) {
+                                                borderStyle = {
+                                                    border: `1px solid ${bdr}`,
+                                                    boxShadow: `0 0 0 2px ${bdr}, inset 0 0 0 1.5px ${parentOutlineColor ?? "transparent"}`,
+                                                };
+                                            } else if (parentOutlineColor) {
+                                                borderStyle = {
+                                                    border: `2px solid ${parentOutlineColor}`,
+                                                    boxShadow: "none",
+                                                };
+                                            } else {
+                                                borderStyle = {
+                                                    border: `1px solid ${bdr}80`,
+                                                    boxShadow: "none",
+                                                };
+                                            }
+
+                                            return {
+                                                bottom: `${layer * 48 + 8}px`,
+                                                height: `40px`,
+                                                left: `${Math.max(0, timeToPct(r.start))}%`,
+                                                width: `${((Math.min(r.end, visEnd) - Math.max(r.start, visStart)) / visRange) * 100}%`,
+                                                display: r.end <= visStart || r.start >= visEnd ? "none" : undefined,
+                                                backgroundColor: selected ? sel : base,
+                                                ...borderStyle,
+                                            };
+                                        })()}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedRegionIds((prev) => {
+                                                const next = new Set(prev);
+                                                if (next.has(r.id)) next.delete(r.id);
+                                                else next.add(r.id);
+                                                return next;
+                                            });
+                                        }}
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            if ((r.layer || 0) === 0) startDrag(r.id, "move");
+                                        }}
+                                        onDoubleClick={(e) => {
+                                            e.stopPropagation();
+                                            const label = prompt("Rename:", r.label);
+                                            if (label) {
+                                                setRegionsWithHistory(regions, (prev) =>
+                                                    prev.map((x) => (x.id === r.id ? { ...x, label } : x))
+                                                );
+                                            }
+                                        }}
+                                        onContextMenu={(e) => {
+                                            e.preventDefault();
+                                            if (!isLayer0) handleDelete(r.id);
+                                        }}
+                                    >
+                                        <span className="text-xs font-bold truncate pointer-events-none drop-shadow-md">
+                                            {r.label}
+                                        </span>
+                                        {!isLeftBorder && (
+                                            <div
+                                                className="absolute left-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-w-resize"
+                                                onMouseDown={(e) => { e.stopPropagation(); startDrag(r.id, "resize-start"); }}
+                                            />
+                                        )}
+                                        {!isRightBorder && (
+                                            <div
+                                                className="absolute right-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-e-resize"
+                                                onMouseDown={(e) => { e.stopPropagation(); startDrag(r.id, "resize-end"); }}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Playhead handle — inside timelineRef so left% maps 1:1 with the red line.
+                            overflow:visible on parent allows it to stick up above the timeline. */}
+                        {(playheadPct >= 0 && playheadPct <= 100) && (
+                            <div
+                                className="absolute z-40"
                                 style={{
                                     left: `${playheadPct}%`,
-                                    top: "-20px",
+                                    top: `-${PLAYHEAD_OFFSET_Y}px`,
                                     transform: "translateX(-50%)",
                                     pointerEvents: "all",
                                     cursor: dragMode === "playhead" ? "grabbing" : "grab",
                                     userSelect: "none",
+                                    width: `${PLAYHEAD_SVG_W}px`,
+                                    height: `${PLAYHEAD_SVG_H}px`,
                                 }}
                                 onMouseDown={(e) => {
                                     e.stopPropagation();
@@ -1078,142 +1171,14 @@ export default function BriformCanvas({
                                     setDragMode("playhead");
                                     dragModeRef.current = "playhead";
                                     isDraggingRef.current = true;
-                                    if (timelineRef.current) {
-                                        const rect = timelineRef.current.getBoundingClientRect();
-                                        const pct = clamp(((e.clientX - rect.left) / rect.width) * 100, 0, 100);
-                                        setPlayheadDragPos(pct);
-                                    }
+                                    const rect = timelineRef.current!.getBoundingClientRect();
+                                    const ratio = clamp((e.clientX - rect.left) / rect.width, 0, 1);
+                                    setPlayheadDragPos(ratio * 100);
                                 }}
                             >
                                 <PlayheadHandle dragging={dragMode === "playhead"} />
                             </div>
-                        </div>
-                    )}
-
-                    <div
-                        ref={timelineRef}
-                        className="relative w-full h-full bg-gray-300 dark:bg-gray-600 rounded cursor-pointer shadow-inner overflow-hidden"
-                        onMouseMove={handleTimelineMouseMove}
-                        onMouseDown={handleTimelineMouseDown}
-                        onMouseUp={handleTimelineMouseUp}
-                        onWheel={handleTimelineWheel}
-                    >
-                        {/* Time ruler ticks — rendered at z-50 so they appear above bubbles */}
-                        {(() => {
-                            const ticks: React.ReactNode[] = [];
-                            const rawStep = visRange / 6;
-                            const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-                            const nicedStep = Math.max(Math.ceil(rawStep / magnitude) * magnitude, 0.5);
-                            const firstTick = Math.ceil(visStart / nicedStep) * nicedStep;
-                            for (let t = firstTick; t <= visEnd + 0.001; t += nicedStep) {
-                                const pct = timeToPct(t);
-                                if (pct < 0 || pct > 100) continue;
-                                ticks.push(
-                                    <div key={t} className="absolute top-0 bottom-0 z-50 pointer-events-none" style={{ left: `${pct}%` }}>
-                                        <div className="absolute bottom-0 w-px h-2 bg-black/30 dark:bg-white/30" />
-                                        <span
-                                            className="absolute bottom-3 text-[9px] font-mono select-none -translate-x-1/2 px-0.5 rounded"
-                                            style={{
-                                                color: "rgba(0,0,0,0.7)",
-                                                background: "rgba(255,255,255,0.7)",
-                                                backdropFilter: "blur(2px)",
-                                            }}
-                                        >
-                                            {formatTime(t)}
-                                        </span>
-                                    </div>
-                                );
-                            }
-                            return ticks;
-                        })()}
-
-                        {/* Playhead line */}
-                        <div
-                            className="absolute top-0 bottom-0 z-30 w-0.5 bg-red-500 pointer-events-none"
-                            style={{ left: `${playheadPct}%` }}
-                        />
-
-                        {regions.map((r) => {
-                            const selected = selectedRegionIds.has(r.id);
-                            const layer = r.layer || 0;
-                            const isParent = regions.some((c) => c.parentId === r.id);
-                            const isLayer0 = layer === 0;
-                            const layer0 = regions.filter((x) => (x.layer || 0) === 0);
-                            const isLeftBorder = isLayer0 && r.start === Math.min(...layer0.map((x) => x.start));
-                            const isRightBorder = isLayer0 && r.end === Math.max(...layer0.map((x) => x.end));
-
-                            return (
-                                <div
-                                    key={r.id}
-                                    className="absolute rounded-md border px-2 flex items-center justify-center z-20 select-none transition-colors text-white shadow-sm"
-                                    style={(() => {
-                                        // Resolve color: use bubble's stored color, or default blue/purple
-                                        const palette = r.color
-                                            ? COLOR_PALETTE.find((p) => p.base === r.color)
-                                            : isParent
-                                            ? COLOR_PALETTE[1] // purple default for parents
-                                            : COLOR_PALETTE[0]; // blue default for leaves
-                                        const base = palette?.base ?? (isParent ? "#a855f7" : "#3b82f6");
-                                        const sel  = palette?.selected ?? (isParent ? "#9333ea" : "#2563eb");
-                                        const bdr  = palette?.border ?? (isParent ? "#d8b4fe" : "#93c5fd");
-                                        return {
-                                            bottom: `${layer * 48 + 8}px`,
-                                            height: `40px`,
-                                            // Clamp bubble to the visible zoom window so it clips at the edge
-                                            left: `${Math.max(0, timeToPct(r.start))}%`,
-                                            width: `${((Math.min(r.end, visEnd) - Math.max(r.start, visStart)) / visRange) * 100}%`,
-                                            display: r.end <= visStart || r.start >= visEnd ? "none" : undefined,
-                                            backgroundColor: selected ? sel : base,
-                                            borderColor: selected ? bdr : `${bdr}80`,
-                                            boxShadow: selected ? `0 0 0 2px ${bdr}` : undefined,
-                                        };
-                                    })()}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedRegionIds((prev) => {
-                                            const next = new Set(prev);
-                                            if (next.has(r.id)) next.delete(r.id);
-                                            else next.add(r.id);
-                                            return next;
-                                        });
-                                    }}
-                                    onMouseDown={(e) => {
-                                        e.stopPropagation();
-                                        // Only allow moving base-layer (layer 0) bubbles
-                                        if ((r.layer || 0) === 0) startDrag(r.id, "move");
-                                    }}
-                                    onDoubleClick={(e) => {
-                                        e.stopPropagation();
-                                        const label = prompt("Rename:", r.label);
-                                        if (label) {
-                                            setRegionsWithHistory(regions, (prev) =>
-                                                prev.map((x) => (x.id === r.id ? { ...x, label } : x))
-                                            );
-                                        }
-                                    }}
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        if (!isLayer0) handleDelete(r.id);
-                                    }}
-                                >
-                                    <span className="text-xs font-bold truncate pointer-events-none drop-shadow-md">
-                                        {r.label}
-                                    </span>
-                                    {!isLeftBorder && (
-                                        <div
-                                            className="absolute left-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-w-resize"
-                                            onMouseDown={(e) => { e.stopPropagation(); startDrag(r.id, "resize-start"); }}
-                                        />
-                                    )}
-                                    {!isRightBorder && (
-                                        <div
-                                            className="absolute right-0 top-0 bottom-0 w-2 hover:bg-white/40 cursor-e-resize"
-                                            onMouseDown={(e) => { e.stopPropagation(); startDrag(r.id, "resize-end"); }}
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
+                        )}
                     </div>
                 </div>
             </div>
@@ -1223,7 +1188,7 @@ export default function BriformCanvas({
                 {groupHint && <span className="text-amber-500 dark:text-amber-400">{groupHint}</span>}
             </div>
 
-            {/* Color picker — always visible; swatches dim when nothing is selected */}
+            {/* Color picker */}
             <div className="mt-2 flex items-center gap-2 flex-wrap min-h-[28px]" onClick={(e) => e.stopPropagation()}>
                 <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">Color:</span>
                 {COLOR_PALETTE.map((p) => {
@@ -1298,7 +1263,6 @@ export default function BriformCanvas({
 
                 <div className="w-px h-6 bg-gray-300 mx-2" />
 
-                {/* Zoom controls */}
                 <button
                     onClick={handleZoomIn}
                     disabled={visRange <= MIN_ZOOM_RANGE + 0.1}
