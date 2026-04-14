@@ -33,7 +33,9 @@ const eslintConfig = [
             "@typescript-eslint/no-unused-vars": "warn",
             
             // Downgrades the missing dependency warning in useEffects
-            "react-hooks/exhaustive-deps": "off"
+            "react-hooks/exhaustive-deps": "off",
+
+			"@typescript-eslint/no-namespace": "off"
         }
     }
 ];
