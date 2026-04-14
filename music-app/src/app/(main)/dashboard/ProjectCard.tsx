@@ -154,7 +154,7 @@ export default function ProjectCard({ id, title, updatedAt, projectType }: Proje
 					<div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
 						<h3 className="text-lg font-bold text-gray-900 mb-2">Delete Project?</h3>
 						<p className="text-gray-600 mb-6">
-							Are you sure you want to delete <span className="font-semibold">"{title}"</span>? This action cannot be undone.
+							Are you sure you want to delete <span className="font-semibold">{title}</span>? This action cannot be undone.
 						</p>
 
 						<div className="flex justify-end gap-3">
