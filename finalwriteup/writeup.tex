@@ -23,7 +23,7 @@
     Course: EECS 401/402 \\
     Instructor: Jian Huang\par}
     \vfill
-    {\large April 2, 2026 \par}
+    {\large May 1, 2026 \par}
 \end{titlepage}
 
 \section*{Executive Summary}
@@ -73,7 +73,7 @@ Our requirements, in order of priority, are: developing a fully functional web a
 
 \textbf{Login.} Users will need a way to log in to our web application to save their projects and access them from any device. We are still figuring out the best way to store user credentials; however, we plan to create a login page so that users can securely store their projects.
 
-\textbf{Grading.} Allowing teachers to set assignments and grade through our platform would make teachers' lives easier. It would provide a strong incentive to use our tool over an alternative such as BriForm. By allowing teachers to set up automatic grading for assignments it will give students faster feedback on their progress and take a load off teachers’ shoulders.
+\textbf{Accessibility.} Users can share their projects with other users and these shared projects can be seamlessly picked up. Additionally, Briform projects and Sound-To-Score projects can be downloaded and exported to display results and retain offline access to the audio and visual effects without using the webpage. 
 
 Overall, our requirements give us a clear focus when creating our music education tool. Our requirements are carefully chosen by feedback from teachers and students, and give us a path towards designing a music education tool that people will enjoy using.
 
@@ -91,26 +91,18 @@ This project involves splitting of work among the group members. This necessitat
 \addcontentsline{toc}{subsection}{Functional Decomposition}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\linewidth]{images/401Technical.drawio.png}
+    \includegraphics[width=0.5\linewidth]{images/402TechDia.drawio.png}
     \caption{Technical Diagram}
     \label{fig:tech401}
 \end{figure}
 
-The first functional unit of the website is the register and login page. On this page, the user will be prompted to either log in to an existing account or to create a new account. If a user needs to create an account, they will be directed to do so while selecting whether they are a teacher or a student, and then will be redirected to the appropriate landing page. If a user already has an account and logs in, they will also be redirected to the appropriate landing page.
+The first functional unit of the website is the register and login page. On this page, the user will be prompted to either log in to an existing account or to create a new account. If a user needs to create an account, they will be directed to do so and receive a confirmation email to create the account. Then they will be redirected to the project dashboard. If a user already has an account and logs in, they will also be redirected to the project dashboard.
 
-The student hub of our site is going to be where students end up after they log in. This will contain all of their classes as well as any assignments that are soon due. It will also have a redirect to the briform style page in case they want to make something independent from their classes. They will be able to view any saved projects they have completed, as well as be able to manage them.
+Once the user is at the project dashboard they are able to resume saved projects or create new projects. There are two styles of projects to choose from: Briform and Sound-To-Score. Briform projects allow users to study music form and phrase, while Sound-To-Score projects allow users to study the score notation of songs.
 
-From the student hub, students will be able to access their individual classes through the classes page. This will allow them to go into their classes and see anything that has been posted by the instructor, as well as any lessons they need to complete.
+The Briform-style page takes inspiration from the site Briformer. In this page, users will be able to make new projects in which they use a music audio file or a video to score the music and practice things like ear theory. They will also have the choice to save the project they finished, and if they want to continue a project, they can upload an existing saved project to resume where they left off.
 
-Via the classes page, students will be able to move to an assignment page in order to be able to see all assignments for that class, as well as their due dates and any grades if the assignments have been graded.
-
-When it comes to teachers, after logging in, they will be sent to the teacher hub. In this hub, they will be able to view all classes they are currently running, as well as being able to make new classes. They can also directly access the briform style page from here as well if they want to use the tool and create new projects, as well as save them. Teachers will also be able to access the sections page from the teacher hub.
-
-The sections page is a per-class page that lets the teacher manage that class. From here, they can post announcements or other class-related posts. They will also be able to create sections that, when the students are on the classes page, they will be able to view the sections the teachers create. In these sections teacher can post material for students to learn from. The last thing the teacher can do on the sections page is to post and grade assignments for the students.
-
-In the assignment creation page, the teacher will be able to make new assignments for their students to work on. These can be simple assignments, such as record and submit something, or more involved assignments where they have to use the Briform style tool to make and submit a project. When using the assignment creation page, the teacher can also set up how the assignment is going to be graded. They can decide whether the assignment will be graded automatically or if it will be manually graded by them after the students submit.
-
-Finally, we have a Briform-style page that takes inspiration from the site Briformer. In this page, students and teachers will be able to make new projects in which they use a music audio file or a video to score the music and practice things like ear theory. They will also have the choice to save the project they finished, and if they want to continue a project, they can upload an existing saved project to resume where they left off.
+Next, on the Sound-To-Score page the user selects a music audio file or a video and then the audio is converted to score notation and displayed on the webpage. Users are able to play the audio and score notation to study how sounds appear in score notation. They can see single staff, double staff, and all the different clefs. The information is also downloadable so that the score notation can be shared and accessed offline easily.
 
 \subsection*{Key Design Decisions}
 \addcontentsline{toc}{subsection}{Key Design Decisions}
@@ -163,9 +155,9 @@ Our imagined user experience is to create the online hub for music education.  O
 The following are big-picture steps we are taking as we develop our prototype:
 \begin{itemize}
 	\item[] \textit{(Completed)} Set up project space and GitHub repository for collaboration and version control
-	\item[] \textit{(In Progress)} Implement account structure using Supabase and integrate these accounts with YouTube accounts
-	\item[] \textit{(In Progress)} Design the improved Briform tool that allows students to diagram form and phrase structure in a more intuitive and user-friendly way than Briform
-	\item[] \textit{(Backlog)} Implement song-to-score functionality that allows students to test their ear training skills against music that they are familiar with
+	\item[] \textit{(Completed)} Implement account structure using Supabase and integrate these accounts with YouTube accounts
+	\item[] \textit{(Completed)} Design the improved Briform tool that allows students to diagram form and phrase structure in a more intuitive and user-friendly way than Briform
+	\item[] \textit{(Completed)} Implement song-to-score functionality that allows students to test their ear training skills against music that they are familiar with
 	\item[] \textit{(Backlog)} Select a preliminary test group of students to use the tool and provide feedback
 	\item[] \textit{(Backlog)} Create a Google Form that test users can fill out to provide feedback on the tool
 	\item[] \textit{(Backlog)} Conduct at least one round of testing and feedback collection from the preliminary test group
