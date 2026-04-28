@@ -44,8 +44,8 @@ export default async function DashboardPage() {
 			{/* Header Section */}
 			<header className="mb-8 flex justify-between items-end">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-400">My Projects</h1>
-					<p className="text-gray-500 mt-1">Welcome back, {profile.name}</p>
+					<h1 className="text-3xl font-bold text-[#53A9CF]">My Projects</h1>
+					<p className="text-[#48A8B8] mt-1">Welcome back, {profile.name}</p>
 				</div>
 			</header>
 

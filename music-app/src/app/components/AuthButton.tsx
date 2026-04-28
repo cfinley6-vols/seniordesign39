@@ -10,7 +10,7 @@ export default async function AuthButton() {
 	if (!user) {
 		return (
 			<div className="flex gap-2">
-				<Link href="/login" className="px-4 py-1 font-semibold text-white rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition">
+				<Link href="/login" className="px-4 py-1 font-semibold text-white rounded-full bg-[#48A8B8] hover:bg-[#3a8ca0] active:bg-[#2c6e7a] transition">
 					Login / Register
 				</Link>
 			</div>
@@ -27,7 +27,7 @@ export default async function AuthButton() {
 		<div className="flex items-center gap-3">
 			<Link
 				href="/dashboard"
-				className="px-4 py-1 rounded-full bg-[#FF8200] text-white font-semibold hover:bg-[#e67300] transition active:bg-[#d05000] transition"
+				className="px-4 py-1 rounded-full bg-[#48A8B8] text-white font-semibold hover:bg-[#3a8ca0] transition active:bg-[#2c6e7a] transition"
 			>
 				{profile ? profile.name : 'Dashboard'}
 			</Link>
