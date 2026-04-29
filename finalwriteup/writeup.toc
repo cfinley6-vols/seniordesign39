@@ -9,20 +9,20 @@
 \contentsline {subsection}{Offsite Login vs. Backend Provider - Ryan Thweatt}{7}{}%
 \contentsline {subsection}{Auto-Grading \& Manual Grading vs. Strictly Manual Grading - Viktor Potter}{7}{}%
 \contentsline {subsection}{Spotify Integration vs. YouTube Integration - Connor Finley}{8}{}%
-\contentsline {subsection}{Briform-Inspired Design vs. Design-From-Scratch - Jason West}{9}{}%
-\contentsline {subsection}{YouTube API (iFrame) vs. YouTube Linking - Davis Akard}{9}{}%
+\contentsline {subsection}{BriFormer-Inspired Design vs. Design-From-Scratch - Jason West}{9}{}%
+\contentsline {subsection}{YouTube API (iFrame) vs. YouTube Linking - Davis Akard}{10}{}%
 \contentsline {subsection}{Custom Song-to-Score Model vs. Existing Tools - Ryan Thweatt}{10}{}%
 \contentsline {section}{Product Development \& Test/Evaluation Plan}{11}{}%
 \contentsline {subsection}{Prototyping}{11}{}%
 \contentsline {subsection}{Development Process}{11}{}%
 \contentsline {subsection}{Iterations}{12}{}%
 \contentsline {section}{Social Impact Evaluation}{13}{}%
-\contentsline {section}{Deliverables and Milestones}{13}{}%
+\contentsline {section}{Deliverables and Milestones}{14}{}%
 \contentsline {subsection}{Development}{14}{}%
 \contentsline {subsection}{Testing/Feedback}{14}{}%
-\contentsline {subsection}{Deployment}{14}{}%
+\contentsline {subsection}{Deployment}{15}{}%
 \contentsline {section}{Project Management}{15}{}%
 \contentsline {subsection}{Proposed Project Timeline}{15}{}%
 \contentsline {section}{Budget}{16}{}%
 \contentsline {subsection}{Estimated Budget}{16}{}%
-\contentsline {section}{References}{16}{}%
+\contentsline {section}{References}{17}{}%
