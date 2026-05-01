@@ -20,7 +20,8 @@
 \contentsline {section}{Deliverables and Milestones}{14}{}%
 \contentsline {subsection}{Development}{14}{}%
 \contentsline {subsection}{Testing/Feedback}{14}{}%
-\contentsline {subsection}{Deployment}{15}{}%
+\contentsline {subsection}{Deployment}{14}{}%
+\contentsline {subsection}{Contribution}{15}{}%
 \contentsline {section}{Project Management}{15}{}%
 \contentsline {subsection}{Proposed Project Timeline}{15}{}%
 \contentsline {section}{Budget}{16}{}%
