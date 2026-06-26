@@ -58,7 +58,7 @@ export default function SoundToScore() {
         }
 
         try {
-            const response = await fetch("https://seniordesign39.vercel.app/api/convert", {
+            const response = await fetch("/api/convert", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url }),
