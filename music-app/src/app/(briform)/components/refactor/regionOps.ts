@@ -5,7 +5,7 @@ export type Region = {
 	start: number;
 	end: number;
 	label: string;
-	layer?: number;
+	layer: number;
 	parentId?: string;
 	color?: string;
 };
@@ -20,7 +20,7 @@ export const ADJACENCY_TOLERANCE = 0.5;
 // Syncronization
 
 export const syncParents = (regions: Region[]): Region[] => {
-	const sorted = [...regions].sort((a, b) => (a.layer || 0) - (b.layer || 0));
+	const sorted = [...regions].sort((a, b) => a.layer - b.layer);
 	const map = new Map(sorted.map((r) => [r.id, { ...r }]));
 
 	for (const r of sorted) {
@@ -54,12 +54,12 @@ export const syncRegions = (regions: Region[]): Region[] => {
 
 export const clampBorders = (regions: Region[], duration: number): Region[] => {
 	if (duration <= 0) return regions;
-	const layer0 = regions.filter((r) => (r.layer || 0) === 0);
+	const layer0 = regions.filter((r) => r.layer === 0);
 	if (layer0.length === 0) return regions;
 	const minStart = Math.min(...layer0.map((r) => r.start));
 	const maxEnd = Math.max(...layer0.map((r) => r.end));
 	return regions.map((r) => {
-		if ((r.layer || 0) !== 0) return r;
+		if (r.layer !== 0) return r;
 		const updated = { ...r };
 		if (r.start === minStart) updated.start = 0;
 		if (r.end === maxEnd) updated.end = duration;
@@ -116,8 +116,8 @@ export const cascadeDeleteGroups = (regions: Region[]): Region[] => {
 		if (toDeleteIds.size === 0) break;
 
 		const sortedToDelete = [...toDeleteIds].sort((a, b) => {
-			const layerA = current.find((r) => r.id === a)?.layer || 0;
-			const layerB = current.find((r) => r.id === b)?.layer || 0;
+			const layerA = current.find((r) => r.id === a)?.layer ?? 0;
+			const layerB = current.find((r) => r.id === b)?.layer ?? 0;
 			return layerB - layerA;
 		});
 
@@ -140,11 +140,11 @@ export function applyResizeWithNeighbor(
 	t: number,
 	duration: number
 ): Region[] {
-	const layer = regions.find((r) => r.id === activeId)?.layer || 0;
+	const layer = regions.find((r) => r.id === activeId)?.layer ?? 0;
 	let updated = regions.map((r) => ({ ...r }));
 
 	const getSortedLayer = () =>
-		updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
+		updated.filter((r) => r.layer === layer).sort((a, b) => a.start - b.start);
 
 	const active = updated.find((r) => r.id === activeId);
 	if (!active) return regions;
@@ -192,7 +192,7 @@ export function applyResizeWithNeighbor(
 			updated = updated.filter((r) => !toDelete.includes(r.id));
 			const a = updated.find((r) => r.id === activeId)!;
 			a.end = cursor > clampedTarget ? cursor : clampedTarget;
-			const newSorted = updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
+			const newSorted = updated.filter((r) => r.layer === layer).sort((a, b) => a.start - b.start);
 			const newActiveIdx = newSorted.findIndex((r) => r.id === activeId);
 			const immediateRight = newActiveIdx < newSorted.length - 1 ? newSorted[newActiveIdx + 1] : null;
 			if (immediateRight && immediateRight.start !== a.end) immediateRight.start = a.end;
@@ -237,7 +237,7 @@ export function applyResizeWithNeighbor(
 			updated = updated.filter((r) => !toDelete.includes(r.id));
             const a = updated.find((r) => r.id === activeId)!;
             a.start = cursor < clampedTarget ? cursor : clampedTarget;
-            const newSorted = updated.filter((r) => (r.layer || 0) === layer).sort((a, b) => a.start - b.start);
+            const newSorted = updated.filter((r) => r.layer === layer).sort((a, b) => a.start - b.start);
             const newActiveIdx = newSorted.findIndex((r) => r.id === activeId);
             const immediateLeft = newActiveIdx > 0 ? newSorted[newActiveIdx - 1] : null;
             if (immediateLeft && immediateLeft.end !== a.start) immediateLeft.end = a.start;

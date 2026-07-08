@@ -195,12 +195,12 @@ export default function BriformCanvas({
         if (seedTimerRef.current) clearTimeout(seedTimerRef.current);
         if (duration <= 0) return;
 
-        const hasLayer0 = regions.some((r) => (r.layer || 0) === 0);
+        const hasLayer0 = regions.some((r) => r.layer === 0);
         if (hasLayer0) return;
 
         seedTimerRef.current = setTimeout(() => {
             setRegions((current) => {
-                const stillEmpty = !current.some((r) => (r.layer || 0) === 0);
+                const stillEmpty = !current.some((r) => r.layer === 0);
                 if (!stillEmpty) return current;
                 return [{ id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 }];
             });
@@ -395,7 +395,7 @@ export default function BriformCanvas({
 
     const handleSplit = () => {
         const t = confirmedTimeRef.current;
-        const target = regions.find((r) => (r.layer || 0) === 0 && t > r.start && t < r.end);
+        const target = regions.find((r) => r.layer === 0 && t > r.start && t < r.end);
         if (!target) { alert("Playhead must be inside a base layer bubble to split."); return; }
         if (t - target.start < MIN_WIDTH || target.end - t < MIN_WIDTH) { alert("Split point too close to edge."); return; }
         setRegionsWithHistory(regions, (prev) =>
@@ -415,7 +415,7 @@ export default function BriformCanvas({
         const ids = Array.from(selectedRegionIds);
         if (ids.length < 2) { alert("Select at least 2 bubbles to merge."); return; }
         const selected = regions.filter((r) => ids.includes(r.id));
-        if (selected.some((r) => (r.layer || 0) !== 0)) { alert("Merge only works on base layer bubbles."); return; }
+        if (selected.some((r) => r.layer !== 0)) { alert("Merge only works on base layer bubbles."); return; }
 
         const parentIds = new Set(selected.map((r) => r.parentId ?? "__none__"));
         if (parentIds.size > 1) {
@@ -433,7 +433,7 @@ export default function BriformCanvas({
 
         const mergeStart = Math.min(...selected.map((r) => r.start));
         const mergeEnd = Math.max(...selected.map((r) => r.end));
-        const absorbed = regions.filter((r) => (r.layer || 0) === 0 && r.start >= mergeStart && r.end <= mergeEnd);
+        const absorbed = regions.filter((r) => r.layer === 0 && r.start >= mergeStart && r.end <= mergeEnd);
         const absorbedIds = new Set(absorbed.map((r) => r.id));
 
         const absorbedParentIds = new Set(absorbed.map((r) => r.parentId ?? "__none__"));
@@ -484,11 +484,11 @@ export default function BriformCanvas({
         const start = Math.min(...selected.map((r) => r.start));
         const end = Math.max(...selected.map((r) => r.end));
 
-        let targetLayer = Math.max(...selected.map((r) => r.layer || 0)) + 1;
+        let targetLayer = Math.max(...selected.map((r) => r.layer)) + 1;
 
         while (
             regions.some(
-                (r) => !ids.includes(r.id) && (r.layer || 0) === targetLayer && start < r.end && end > r.start
+                (r) => !ids.includes(r.id) && r.layer === targetLayer && start < r.end && end > r.start
             )
         ) {
             targetLayer++;
@@ -505,7 +505,7 @@ export default function BriformCanvas({
 
     const handleDelete = (id: string) => {
         const target = regions.find((r) => r.id === id);
-        if (!target || (target.layer || 0) === 0) return;
+        if (!target || target.layer === 0) return;
 
         setRegionsWithHistory(regions, (prev) => {
             const walkUp = (startId: string, list: Region[]): string[] => {
@@ -588,14 +588,14 @@ export default function BriformCanvas({
                 if (activeIndex === -1) return prev;
                 const updated = prev.map((r) => ({ ...r }));
                 const region = updated[activeIndex];
-                const currentLayer = region.layer || 0;
+                const currentLayer = region.layer;
                 const width = region.end - region.start;
 
                 const newStart = clamp(t - width / 2, 0, duration - width);
                 const newEnd = newStart + width;
 
                 const colliders = prev.filter(
-                    (r) => r.id !== activeRegionId && (r.layer || 0) === currentLayer
+                    (r) => r.id !== activeRegionId && r.layer === currentLayer
                 );
 
                 let constrainedStart = newStart;
@@ -643,17 +643,17 @@ export default function BriformCanvas({
 
         if (isDraggingRef.current && dragMode === "move" && activeRegionId !== null) {
             const active = regions.find((r) => r.id === activeRegionId);
-            if (active && (active.layer || 0) !== 0) {
+            if (active && active.layer !== 0) {
                 const t = timeFromClient(e.clientX);
                 if (t !== null) {
                     const width = active.end - active.start;
                     const newStart = clamp(t - width / 2, 0, duration - width);
                     const newEnd = newStart + width;
                     const hasNoNeighborCollision = !regions.some(
-                        (r) => r.id !== activeRegionId && (r.layer || 0) === (active.layer || 0) && newStart < r.end && newEnd > r.start
+                        (r) => r.id !== activeRegionId && r.layer === active.layer && newStart < r.end && newEnd > r.start
                     );
                     const nearestNeighborDist = regions
-                        .filter((r) => r.id !== activeRegionId && (r.layer || 0) === (active.layer || 0))
+                        .filter((r) => r.id !== activeRegionId && r.layer === active.layer)
                         .reduce((min, r) => Math.min(min, Math.abs(newEnd - r.start), Math.abs(newStart - r.end)), Infinity);
                     if (hasNoNeighborCollision && nearestNeighborDist > 2) {
                         handleDelete(activeRegionId);
@@ -692,7 +692,7 @@ export default function BriformCanvas({
         return map;
     })();
 
-    const maxLayer = regions.length > 0 ? Math.max(...regions.map((r) => r.layer || 0)) : 0;
+    const maxLayer = regions.length > 0 ? Math.max(...regions.map((r) => r.layer)) : 0;
     const containerHeightPx = 16 + (maxLayer + 1) * 48;
     const canUndo = historyRef.current.length > 0;
     const canRedo = redoRef.current.length > 0;
@@ -709,7 +709,7 @@ export default function BriformCanvas({
         return true;
     })();
     const canMerge = (() => {
-        const ms = selectedRegions.filter((r) => (r.layer || 0) === 0);
+        const ms = selectedRegions.filter((r) => r.layer === 0);
         if (ms.length < 2) return false;
         const pids = new Set(ms.map((r) => r.parentId ?? "__none__"));
         if (pids.size > 1) return false;
@@ -809,10 +809,10 @@ export default function BriformCanvas({
 
                             {regions.map((r) => {
                                 const selected = selectedRegionIds.has(r.id);
-                                const layer = r.layer || 0;
+                                const layer = r.layer;
                                 const isParent = regions.some((c) => c.parentId === r.id);
                                 const isLayer0 = layer === 0;
-                                const layer0 = regions.filter((x) => (x.layer || 0) === 0);
+                                const layer0 = regions.filter((x) => x.layer === 0);
                                 const isLeftBorder = isLayer0 && r.start === Math.min(...layer0.map((x) => x.start));
                                 const isRightBorder = isLayer0 && r.end === Math.max(...layer0.map((x) => x.end));
 
@@ -876,7 +876,7 @@ export default function BriformCanvas({
                                         }}
                                         onMouseDown={(e) => {
                                             e.stopPropagation();
-                                            if ((r.layer || 0) === 0) startDrag(r.id, "move");
+                                            if (r.layer === 0) startDrag(r.id, "move");
                                         }}
                                         onDoubleClick={(e) => {
                                             e.stopPropagation();
