@@ -6,7 +6,7 @@ import YouTubeEmbedWithSearch from "./YouTubeEmbedWithSearch";
 import { PlaybackTimeline } from "./PlaybackTimeline";
 import { saveProject } from "@/app/(briform)/briform/actions"
 import BriformCanvas from "./BriformCanvas";
-import { type Region } from "./lib/regionOps";
+import { type Region } from "../lib/regionOps";
 
 type Track = {
 	id: string;

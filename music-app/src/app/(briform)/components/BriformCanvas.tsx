@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { COLOR_PALETTE } from "./ui/colorPalette";
-import { PlayheadHandle, PLAYHEAD_SVG_W, PLAYHEAD_SVG_H, PLAYHEAD_OFFSET_Y } from "./ui/PlayheadHandle";
+import { COLOR_PALETTE } from "../constants/colorPalette";
+import { PlayheadHandle, PLAYHEAD_SVG_W, PLAYHEAD_SVG_H, PLAYHEAD_OFFSET_Y } from "./PlayheadHandle";
 
 import {
 	type Region,
@@ -13,7 +13,7 @@ import {
 	fullSync,
 	cascadeDeleteGroups,
 	applyResizeWithNeighbor,
-} from "./lib/regionOps";
+} from "../lib/regionOps";
 
 type DragMode = "none" | "move" | "resize-start" | "resize-end" | "playhead";
 
