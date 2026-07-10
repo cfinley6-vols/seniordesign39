@@ -11,7 +11,7 @@ import {
 	fullSync,
 	cascadeDeleteGroups,
 	applyResizeWithNeighbor,
-} from "./refactor/regionOps";
+} from "./shared/regionOps";
 
 // Preset palette — name + base hex + selected (darker) hex + border hex
 const COLOR_PALETTE: { name: string; base: string; selected: string; border: string }[] = [
