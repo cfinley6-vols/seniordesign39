@@ -1,4 +1,4 @@
-// music-app/src/app/(briform)/components/BriformNavbar.tsx
+// src/app/(briform)/components/BriformNavbar.tsx
 import { createClient } from "@/app/lib/supabase/server"
 import { notFound, redirect } from "next/navigation"
 import AuthButton from "@/app/components/AuthButton"

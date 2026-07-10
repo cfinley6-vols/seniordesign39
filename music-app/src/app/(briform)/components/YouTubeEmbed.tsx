@@ -1,4 +1,4 @@
-// src/app/briform/[id]/YouTubeEmbed.tsx
+// src/app/(briform)/components/YouTubeEmbed.tsx
 'use client'
 import { useState } from 'react'
 

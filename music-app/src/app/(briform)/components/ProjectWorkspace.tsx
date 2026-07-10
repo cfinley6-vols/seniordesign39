@@ -1,4 +1,4 @@
-// src/app/briform/[id]/ProjectWorkspace.tsx
+// src/app/(briform)/components/ProjectWorkspace.tsx
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
@@ -7,7 +7,6 @@ import { PlaybackTimeline } from "./PlaybackTimeline";
 import { saveProject } from "@/app/(briform)/briform/actions"
 import BriformCanvas from "./BriformCanvas";
 import { type Region } from "./refactor/regionOps";
-import Video from "@/app/(briform)/components/YouTubeEmbedWithSearch";
 
 type Track = {
 	id: string;

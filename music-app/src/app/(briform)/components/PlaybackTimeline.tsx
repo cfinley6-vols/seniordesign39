@@ -1,4 +1,4 @@
-// src/app/briform/[id]/PlaybackTimeline.tsx
+// src/app/(briform)/components/PlaybackTimeline.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
