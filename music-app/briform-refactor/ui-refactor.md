@@ -5,17 +5,26 @@
 For this part of the refactor, we have adjusted the file organization to the following:
 
 ```
-./components
-├── BriformCanvas.tsx
-├── BriformNavbar.tsx
-├── PlaybackTimeline.tsx
-├── ProjectWorkspace.tsx
-├── YouTubeEmbedWithSearch.tsx
-├── lib
-│   └── regionOps.ts
-└── ui
-    ├── PlayheadHandle.tsx
-    └── colorPalette.ts
+.
+├── api
+│   └── briform
+│       └── [id]
+│           └── route.ts
+├── briform
+│   ├── [id]
+│   │   ├── layout.tsx
+│   │   └── page.tsx
+│   └── actions.ts
+├── components
+│   ├── BriformCanvas.tsx
+│   ├── BriformNavbar.tsx
+│   ├── PlaybackTimeline.tsx
+│   ├── PlayheadHandle.tsx
+│   ├── ProjectWorkspace.tsx
+│   └── YouTubeEmbedWithSearch.tsx
+└── lib
+    ├── colorPalette.ts
+    └── regionOps.ts
 ```
 
 ### A Look At `colorPalette.ts` and `PlayheadHandle.tsx`
