@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { COLOR_PALETTE } from "../constants/colorPalette";
+import { COLOR_PALETTE } from "../lib/colorPalette";
 import { PlayheadHandle, PLAYHEAD_SVG_W, PLAYHEAD_SVG_H, PLAYHEAD_OFFSET_Y } from "./PlayheadHandle";
 
 import {
