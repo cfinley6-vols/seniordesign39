@@ -4,6 +4,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { COLOR_PALETTE } from "../lib/colorPalette";
 import { PlayheadHandle, PLAYHEAD_SVG_W, PLAYHEAD_SVG_H, PLAYHEAD_OFFSET_Y } from "./PlayheadHandle";
+import { useHistory } from "../lib/useHistory";
 
 import {
 	type Region,
@@ -28,8 +29,6 @@ interface BriformCanvasProps {
     togglePlay: () => void;
 }
 
-const MAX_HISTORY = 50;
-
 export default function BriformCanvas({
     regions = [],
     setRegions,
@@ -48,14 +47,15 @@ export default function BriformCanvas({
     // Zoom: visible time window [zoomStart, zoomEnd] in seconds
     const [zoomStart, setZoomStart] = useState<number>(0);
     const [zoomEnd, setZoomEnd] = useState<number>(0); // 0 = unset, will follow duration
-
+ 
     const lastSeekPctRef = useRef<number | null>(null);
-
+ 
     // confirmedTimeRef: the best known playback position for split operations.
     const confirmedTimeRef = useRef<number>(0);
-
-    const historyRef = useRef<Region[][]>([]);
-    const redoRef = useRef<Region[][]>([]);
+ 
+    const { pushHistory, setRegionsWithHistory, handleUndo, handleRedo, canUndo, canRedo } =
+        useHistory(setRegions);
+ 
     const isDraggingRef = useRef(false);
     const timelineRef = useRef<HTMLDivElement>(null);
     const dragSnapshotRef = useRef<Region[] | null>(null);
@@ -67,7 +67,7 @@ export default function BriformCanvas({
     const playerInstanceRef = useRef<any>(null);
     const isPlayingRef = useRef(isPlaying);
     const togglePlayRef = useRef(togglePlay);
-
+ 
     useEffect(() => { dragModeRef.current = dragMode; }, [dragMode]);
     useEffect(() => {
         durationRef.current = duration;
@@ -80,7 +80,7 @@ export default function BriformCanvas({
     useEffect(() => { togglePlayRef.current = togglePlay; }, [togglePlay]);
     useEffect(() => { zoomStartRef.current = zoomStart; }, [zoomStart]);
     useEffect(() => { zoomEndRef.current = zoomEnd; }, [zoomEnd]);
-
+ 
     const prevCurrentTimeRef = useRef(currentTime);
     useEffect(() => {
         const delta = Math.abs(currentTime - prevCurrentTimeRef.current);
@@ -89,7 +89,7 @@ export default function BriformCanvas({
         }
         prevCurrentTimeRef.current = currentTime;
     }, [currentTime]);
-
+ 
     useEffect(() => {
         if (lastSeekPctRef.current === null || duration <= 0) return;
         const currentPct = (currentTime / duration) * 100;
@@ -97,21 +97,21 @@ export default function BriformCanvas({
             lastSeekPctRef.current = null;
         }
     }, [currentTime, duration]);
-
+ 
     const PLAYHEAD_ANCHOR = 0.2;
     const isPlayingRef2 = useRef(isPlaying);
     useEffect(() => { isPlayingRef2.current = isPlaying; }, [isPlaying]);
-
+ 
     useEffect(() => {
         if (duration <= 0) return;
         const start = zoomStartRef.current;
         const end = zoomEndRef.current > 0 ? zoomEndRef.current : duration;
         const range = end - start;
-
+ 
         if (range >= duration - 0.1) return;
-
+ 
         const t = currentTime;
-
+ 
         if (isPlayingRef2.current) {
             const newStart = clamp(t - range * PLAYHEAD_ANCHOR, 0, duration - range);
             const newEnd = newStart + range;
@@ -131,28 +131,28 @@ export default function BriformCanvas({
             }
         }
     }, [currentTime, duration]);
-
+ 
     // Effective zoom window
     const visStart = zoomStart;
     const visEnd = zoomEnd > 0 ? zoomEnd : duration;
     const visRange = Math.max(visEnd - visStart, 0.1);
     const timeToPct = (t: number) => ((t - visStart) / visRange) * 100;
-
+ 
     const playheadPct = (() => {
         if (playheadDragPos !== null) return playheadDragPos;
         if (lastSeekPctRef.current !== null) return lastSeekPctRef.current;
         return timeToPct(currentTime);
     })();
-
+ 
     // --- Seed / missing-bubble guard ---
     const seedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => {
         if (seedTimerRef.current) clearTimeout(seedTimerRef.current);
         if (duration <= 0) return;
-
+ 
         const hasLayer0 = regions.some((r) => r.layer === 0);
         if (hasLayer0) return;
-
+ 
         seedTimerRef.current = setTimeout(() => {
             setRegions((current) => {
                 const stillEmpty = !current.some((r) => r.layer === 0);
@@ -160,11 +160,11 @@ export default function BriformCanvas({
                 return [{ id: crypto.randomUUID(), start: 0, end: duration, label: "Section 1", layer: 0 }];
             });
         }, 400);
-
+ 
         return () => { if (seedTimerRef.current) clearTimeout(seedTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [duration, regions.length]);
-
+ 
     // --- Global mouse handlers ---
     useEffect(() => {
         const getTimeAndPct = (clientX: number) => {
@@ -178,7 +178,7 @@ export default function BriformCanvas({
             const pct = ratio * 100;
             return { pct, t };
         };
-
+ 
         const onGlobalMouseMove = (e: MouseEvent) => {
             if (dragModeRef.current !== "playhead") return;
             // FIX: use timelineRef for accurate pct so handle stays aligned with red line
@@ -187,22 +187,22 @@ export default function BriformCanvas({
             const ratio = clamp((e.clientX - rect.left) / rect.width, 0, 1);
             setPlayheadDragPos(ratio * 100);
         };
-
+ 
         const onGlobalMouseUp = (e: MouseEvent) => {
             if (dragModeRef.current === "playhead") {
                 const { pct, t } = getTimeAndPct(e.clientX);
                 if (pct !== null) lastSeekPctRef.current = pct;
-
+ 
                 if (t !== null) confirmedTimeRef.current = t;
-
+ 
                 setPlayheadDragPos(null);
                 setDragMode("none");
                 dragModeRef.current = "none";
-
+ 
                 if (t !== null && playerRef?.current?.seekTo) {
                     playerRef.current.seekTo(t, true);
                 }
-
+ 
                 if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
                 pauseTimerRef.current = setTimeout(() => {
                     const player = playerInstanceRef.current;
@@ -213,27 +213,23 @@ export default function BriformCanvas({
                         togglePlayRef.current?.();
                     }
                 }, 250);
-
+ 
                 isDraggingRef.current = false;
                 return;
             }
-
+ 
             if (isDraggingRef.current && dragSnapshotRef.current && dragModeRef.current !== "none") {
-                historyRef.current = [
-                    ...historyRef.current.slice(-MAX_HISTORY + 1),
-                    dragSnapshotRef.current,
-                ];
-                redoRef.current = [];
+                pushHistory(dragSnapshotRef.current);
                 dragSnapshotRef.current = null;
             }
-
+ 
             setDragMode("none");
             dragModeRef.current = "none";
             setActiveRegionId(null);
             setDragStart(null);
             isDraggingRef.current = false;
         };
-
+ 
         window.addEventListener("mousemove", onGlobalMouseMove);
         window.addEventListener("mouseup", onGlobalMouseUp);
         return () => {
@@ -241,50 +237,10 @@ export default function BriformCanvas({
             window.removeEventListener("mouseup", onGlobalMouseUp);
             if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
         };
-    }, [playerRef]);
-
-    // --- History ---
-
-    const pushHistory = useCallback((snapshot: Region[]) => {
-        historyRef.current = [
-            ...historyRef.current.slice(-MAX_HISTORY + 1),
-            snapshot.map((r) => ({ ...r })),
-        ];
-        redoRef.current = [];
-    }, []);
-
-    const setRegionsWithHistory = useCallback(
-        (current: Region[], updater: (prev: Region[]) => Region[]) => {
-            pushHistory(current);
-            setRegions((prev) => updater(prev));
-        },
-        [pushHistory, setRegions]
-    );
-
-    const handleUndo = useCallback(() => {
-        if (historyRef.current.length === 0) return;
-        const prev = historyRef.current[historyRef.current.length - 1];
-        historyRef.current = historyRef.current.slice(0, -1);
-        setRegions((current) => {
-            redoRef.current = [...redoRef.current.slice(-MAX_HISTORY + 1), current.map((r) => ({ ...r }))];
-            return prev;
-        });
-        setSelectedRegionIds(new Set());
-    }, [setRegions]);
-
-    const handleRedo = useCallback(() => {
-        if (redoRef.current.length === 0) return;
-        const next = redoRef.current[redoRef.current.length - 1];
-        redoRef.current = redoRef.current.slice(0, -1);
-        setRegions((current) => {
-            historyRef.current = [...historyRef.current.slice(-MAX_HISTORY + 1), current.map((r) => ({ ...r }))];
-            return next;
-        });
-        setSelectedRegionIds(new Set());
-    }, [setRegions]);
-
+    }, [playerRef, pushHistory]);
+ 
     // --- Utilities ---
-
+ 
     const timeFromClient = useCallback(
         (clientX: number): number | null => {
             if (!timelineRef.current) return null;
@@ -294,9 +250,9 @@ export default function BriformCanvas({
         },
         [duration, visStart, visRange]
     );
-
+ 
     const MIN_ZOOM_RANGE = 10;
-
+ 
     const zoomAround = (anchor: number, newRange: number) => {
         const clamped = clamp(newRange, MIN_ZOOM_RANGE, duration);
         let newStart = anchor - clamped / 2;
@@ -306,7 +262,7 @@ export default function BriformCanvas({
         setZoomStart(newStart);
         setZoomEnd(newEnd);
     };
-
+ 
     const handleZoomIn = () => {
         const anchor = confirmedTimeRef.current;
         zoomAround(anchor, visRange / 2);
@@ -328,7 +284,7 @@ export default function BriformCanvas({
         setZoomStart(newStart);
         setZoomEnd(newEnd);
     };
-
+ 
     useEffect(() => {
         const el = timelineRef.current;
         if (!el) return;
@@ -338,16 +294,16 @@ export default function BriformCanvas({
         el.addEventListener("wheel", handler, { passive: false });
         return () => el.removeEventListener("wheel", handler);
     });
-
+ 
     const seekTo = (seconds: number) => {
         if (playerRef?.current?.seekTo)
             playerRef.current.seekTo(clamp(seconds, 0, duration || seconds), true);
     };
-
+ 
     const skip = (deltaSeconds: number) => seekTo(currentTime + deltaSeconds);
-
+ 
     // --- Actions ---
-
+ 
     const handleSplit = () => {
         const t = confirmedTimeRef.current;
         const target = regions.find((r) => r.layer === 0 && t > r.start && t < r.end);
@@ -365,19 +321,19 @@ export default function BriformCanvas({
         );
         setSelectedRegionIds(new Set());
     };
-
+ 
     const handleMerge = () => {
         const ids = Array.from(selectedRegionIds);
         if (ids.length < 2) { alert("Select at least 2 bubbles to merge."); return; }
         const selected = regions.filter((r) => ids.includes(r.id));
         if (selected.some((r) => r.layer !== 0)) { alert("Merge only works on base layer bubbles."); return; }
-
+ 
         const parentIds = new Set(selected.map((r) => r.parentId ?? "__none__"));
         if (parentIds.size > 1) {
             alert("Cannot merge bubbles that belong to different groups.");
             return;
         }
-
+ 
         const sortedSelected = [...selected].sort((a, b) => a.start - b.start);
         for (let i = 0; i < sortedSelected.length - 1; i++) {
             if (sortedSelected[i + 1].start - sortedSelected[i].end > ADJACENCY_TOLERANCE) {
@@ -385,20 +341,20 @@ export default function BriformCanvas({
                 return;
             }
         }
-
+ 
         const mergeStart = Math.min(...selected.map((r) => r.start));
         const mergeEnd = Math.max(...selected.map((r) => r.end));
         const absorbed = regions.filter((r) => r.layer === 0 && r.start >= mergeStart && r.end <= mergeEnd);
         const absorbedIds = new Set(absorbed.map((r) => r.id));
-
+ 
         const absorbedParentIds = new Set(absorbed.map((r) => r.parentId ?? "__none__"));
         if (absorbedParentIds.size > 1) {
             alert("Cannot merge: the range spans bubbles from different groups.");
             return;
         }
-
+ 
         const mergedParentId = [...parentIds][0] === "__none__" ? undefined : ([...parentIds][0] as string);
-
+ 
         const merged: Region = {
             id: crypto.randomUUID(),
             start: mergeStart,
@@ -407,7 +363,7 @@ export default function BriformCanvas({
             layer: 0,
             parentId: mergedParentId,
         };
-
+ 
         setRegionsWithHistory(regions, (prev) => {
             const without = prev
                 .filter((r) => !absorbedIds.has(r.id))
@@ -416,17 +372,17 @@ export default function BriformCanvas({
         });
         setSelectedRegionIds(new Set());
     };
-
+ 
     const handleGroup = () => {
         const ids = Array.from(selectedRegionIds);
         if (ids.length < 2) { alert("Select at least 2 regions to group."); return; }
         const selected = regions.filter((r) => ids.includes(r.id));
-
+ 
         if (selected.some((r) => r.parentId !== undefined)) {
             alert("One or more selected bubbles are already part of a group.");
             return;
         }
-
+ 
         const sortedByStart = [...selected].sort((a, b) => a.start - b.start);
         for (let i = 0; i < sortedByStart.length - 1; i++) {
             const gap = sortedByStart[i + 1].start - sortedByStart[i].end;
@@ -435,12 +391,12 @@ export default function BriformCanvas({
                 return;
             }
         }
-
+ 
         const start = Math.min(...selected.map((r) => r.start));
         const end = Math.max(...selected.map((r) => r.end));
-
+ 
         let targetLayer = Math.max(...selected.map((r) => r.layer)) + 1;
-
+ 
         while (
             regions.some(
                 (r) => !ids.includes(r.id) && r.layer === targetLayer && start < r.end && end > r.start
@@ -448,20 +404,20 @@ export default function BriformCanvas({
         ) {
             targetLayer++;
         }
-
+ 
         const parentId = crypto.randomUUID();
         const parent: Region = { id: parentId, start, end, label: "Grouped Section", layer: targetLayer };
-
+ 
         setRegionsWithHistory(regions, (prev) =>
             fullSync([...prev.map((r) => (ids.includes(r.id) ? { ...r, parentId } : r)), parent], duration)
         );
         setSelectedRegionIds(new Set());
     };
-
+ 
     const handleDelete = (id: string) => {
         const target = regions.find((r) => r.id === id);
         if (!target || target.layer === 0) return;
-
+ 
         setRegionsWithHistory(regions, (prev) => {
             const walkUp = (startId: string, list: Region[]): string[] => {
                 const ids: string[] = [startId];
@@ -481,35 +437,35 @@ export default function BriformCanvas({
                 }
                 return ids;
             };
-
+ 
             const chainToDelete = walkUp(id, prev);
-
+ 
             chainToDelete.sort((a, b) => {
-                const la = prev.find((r) => r.id === a)?.layer || 0;
-                const lb = prev.find((r) => r.id === b)?.layer || 0;
+                const la = prev.find((r) => r.id === a)?.layer ?? 0;
+                const lb = prev.find((r) => r.id === b)?.layer ?? 0;
                 return lb - la;
             });
-
+ 
             let result = [...prev];
             for (const deleteId of chainToDelete) {
                 result = result
                     .filter((r) => r.id !== deleteId)
                     .map((r) => r.parentId === deleteId ? { ...r, parentId: undefined } : r);
             }
-
+ 
             return fullSync(result, duration);
         });
-
+ 
         setSelectedRegionIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     };
-
+ 
     const handleColorChange = (color: string) => {
         if (selectedRegionIds.size === 0) return;
         setRegionsWithHistory(regions, (prev) =>
             prev.map((r) => selectedRegionIds.has(r.id) ? { ...r, color } : r)
         );
     };
-
+ 
     const handleClear = () => {
         if (confirm("Clear all regions?")) {
             pushHistory(regions);
@@ -517,9 +473,9 @@ export default function BriformCanvas({
             setSelectedRegionIds(new Set());
         }
     };
-
+ 
     // --- Timeline Mouse Events ---
-
+ 
     const handleTimelineMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (dragModeRef.current === "playhead") return;
         const t = timeFromClient(e.clientX);
@@ -527,14 +483,14 @@ export default function BriformCanvas({
         setDragStart(t);
         isDraggingRef.current = false;
     };
-
+ 
     const handleTimelineMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (dragModeRef.current === "playhead" || e.buttons !== 1) return;
         isDraggingRef.current = true;
-
+ 
         const t = timeFromClient(e.clientX);
         if (t === null || dragMode === "none" || activeRegionId === null) return;
-
+ 
         if (dragMode === "resize-start" || dragMode === "resize-end") {
             setRegions((prev) => applyResizeWithNeighbor(prev, activeRegionId, dragMode, t, duration));
         } else if (dragMode === "move") {
@@ -545,14 +501,14 @@ export default function BriformCanvas({
                 const region = updated[activeIndex];
                 const currentLayer = region.layer;
                 const width = region.end - region.start;
-
+ 
                 const newStart = clamp(t - width / 2, 0, duration - width);
                 const newEnd = newStart + width;
-
+ 
                 const colliders = prev.filter(
                     (r) => r.id !== activeRegionId && r.layer === currentLayer
                 );
-
+ 
                 let constrainedStart = newStart;
                 for (const c of colliders) {
                     if (newStart < c.end && newEnd > c.start) {
@@ -565,7 +521,7 @@ export default function BriformCanvas({
                 }
                 constrainedStart = clamp(constrainedStart, 0, duration - width);
                 const constrainedEnd = constrainedStart + width;
-
+ 
                 const stillCollides = colliders.some(
                     (r) => constrainedStart < r.end && constrainedEnd > r.start
                 );
@@ -586,7 +542,7 @@ export default function BriformCanvas({
             });
         }
     };
-
+ 
     const handleTimelineMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isDraggingRef.current && dragStart !== null && dragMode === "none") {
             const t = timeFromClient(e.clientX);
@@ -595,7 +551,7 @@ export default function BriformCanvas({
                 confirmedTimeRef.current = t;
             }
         }
-
+ 
         if (isDraggingRef.current && dragMode === "move" && activeRegionId !== null) {
             const active = regions.find((r) => r.id === activeRegionId);
             if (active && active.layer !== 0) {
@@ -617,19 +573,19 @@ export default function BriformCanvas({
             }
         }
     };
-
+ 
     const startDrag = (id: string, mode: DragMode) => {
         dragSnapshotRef.current = regions.map((r) => ({ ...r }));
         setActiveRegionId(id);
         setDragMode(mode);
         dragModeRef.current = mode;
     };
-
+ 
     // --- Formatting ---
-
+ 
     const formatTime = (s: number) =>
         `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-
+ 
     // --- Group color inheritance ---
     // Build a map: bubbleId -> outline color from its direct parent (one layer up only)
     const parentOutlineColorMap = (() => {
@@ -646,12 +602,10 @@ export default function BriformCanvas({
         }
         return map;
     })();
-
+ 
     const maxLayer = regions.length > 0 ? Math.max(...regions.map((r) => r.layer)) : 0;
     const containerHeightPx = 16 + (maxLayer + 1) * 48;
-    const canUndo = historyRef.current.length > 0;
-    const canRedo = redoRef.current.length > 0;
-
+ 
     const selectedRegions = regions.filter((r) => selectedRegionIds.has(r.id));
     const alreadyGrouped = selectedRegions.some((r) => r.parentId !== undefined);
     const canGroup = (() => {
@@ -674,13 +628,13 @@ export default function BriformCanvas({
         }
         return true;
     })();
-
+ 
     let groupHint: string | null = null;
     if (selectedRegions.length >= 2 && !canGroup) {
         if (alreadyGrouped) groupHint = "One or more bubbles are already in a group";
         else groupHint = "All selected bubbles must be touching with no time gaps";
     }
-
+ 
     return (
         <section
             className="bg-white dark:bg-gray-800 text-black dark:text-white rounded-lg p-5 shadow-lg mb-6 border border-gray-200 dark:border-gray-700"
@@ -699,7 +653,7 @@ export default function BriformCanvas({
                     </div>
                 </div>
             </div>
-
+ 
             <div className="pt-5">
                 <div
                     className="relative w-full bg-gray-100 dark:bg-gray-900 rounded-lg p-1 transition-all duration-300 overflow-visible"
@@ -711,7 +665,7 @@ export default function BriformCanvas({
                         by placing it INSIDE the timeline div (via a portal-like absolute child
                         that overflows upward). This ensures the handle's left% always maps to
                         the same percentage as the red playhead line — no drift at extremes.
-
+ 
                         The handle is placed with overflow:visible on the timeline, positioned
                         at top: -PLAYHEAD_OFFSET_Y so the triangle tip lands exactly at y=0
                         (the top of the timeline), flush with the red line origin.
@@ -755,13 +709,13 @@ export default function BriformCanvas({
                                 }
                                 return ticks;
                             })()}
-
+ 
                             {/* Playhead line */}
                             <div
                                 className="absolute top-0 bottom-0 z-30 w-0.5 bg-red-500 pointer-events-none"
                                 style={{ left: `${playheadPct}%` }}
                             />
-
+ 
                             {regions.map((r) => {
                                 const selected = selectedRegionIds.has(r.id);
                                 const layer = r.layer;
@@ -770,10 +724,10 @@ export default function BriformCanvas({
                                 const layer0 = regions.filter((x) => x.layer === 0);
                                 const isLeftBorder = isLayer0 && r.start === Math.min(...layer0.map((x) => x.start));
                                 const isRightBorder = isLayer0 && r.end === Math.max(...layer0.map((x) => x.end));
-
+ 
                                 // Determine outline color from parent (one level up only)
                                 const parentOutlineColor = parentOutlineColorMap.get(r.id);
-
+ 
                                 return (
                                     <div
                                         key={r.id}
@@ -787,7 +741,7 @@ export default function BriformCanvas({
                                             const base = palette?.base ?? (isParent ? "#a855f7" : "#3b82f6");
                                             const sel  = palette?.selected ?? (isParent ? "#9333ea" : "#2563eb");
                                             const bdr  = palette?.border ?? (isParent ? "#d8b4fe" : "#93c5fd");
-
+ 
                                             // Border logic:
                                             // 1. If selected: use the bubble's own selection border + glow
                                             // 2. Else if has a parent outline color: show parent's color as border (2px solid)
@@ -809,7 +763,7 @@ export default function BriformCanvas({
                                                     boxShadow: "none",
                                                 };
                                             }
-
+ 
                                             return {
                                                 bottom: `${layer * 48 + 8}px`,
                                                 height: `40px`,
@@ -866,7 +820,7 @@ export default function BriformCanvas({
                                 );
                             })}
                         </div>
-
+ 
                         {/* Playhead handle — inside timelineRef so left% maps 1:1 with the red line.
                             overflow:visible on parent allows it to stick up above the timeline. */}
                         {(playheadPct >= 0 && playheadPct <= 100) && (
@@ -899,12 +853,12 @@ export default function BriformCanvas({
                     </div>
                 </div>
             </div>
-
+ 
             <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 h-5">
                 <span>Drag edges to resize • Double-click to rename • Right-click to delete (non-base)</span>
                 {groupHint && <span className="text-amber-500 dark:text-amber-400">{groupHint}</span>}
             </div>
-
+ 
             {/* Color picker */}
             <div className="mt-2 flex items-center gap-2 flex-wrap min-h-[28px]" onClick={(e) => e.stopPropagation()}>
                 <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">Color:</span>
@@ -930,16 +884,16 @@ export default function BriformCanvas({
                     );
                 })}
             </div>
-
+ 
             <div className="mt-4 flex flex-wrap gap-2 items-center justify-center border-t dark:border-gray-700 pt-4" onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => skip(-5)} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">-5s</button>
                 <button onClick={togglePlay} className="px-6 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 font-bold w-24">
                     {isPlaying ? "Pause" : "Play"}
                 </button>
                 <button onClick={() => skip(5)} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">+5s</button>
-
+ 
                 <div className="w-px h-6 bg-gray-300 mx-2" />
-
+ 
                 <button onClick={handleSplit} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">Split</button>
                 <button
                     onClick={handleMerge}
@@ -957,9 +911,9 @@ export default function BriformCanvas({
                 >
                     Group
                 </button>
-
+ 
                 <div className="w-px h-6 bg-gray-300 mx-2" />
-
+ 
                 <button
                     onClick={handleUndo}
                     disabled={!canUndo}
@@ -977,9 +931,9 @@ export default function BriformCanvas({
                     ↪ Redo
                 </button>
                 <button onClick={handleClear} className="px-3 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">Clear</button>
-
+ 
                 <div className="w-px h-6 bg-gray-300 mx-2" />
-
+ 
                 <button
                     onClick={handleZoomIn}
                     disabled={visRange <= MIN_ZOOM_RANGE + 0.1}
